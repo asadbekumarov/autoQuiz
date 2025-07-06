@@ -1,64 +1,52 @@
 import React from 'react';
 
-const QuestionList = ({ questions = [], onDelete, onEdit }) => (
-    <div className="mt-6 sm:mt-8 w-full">
-        <h2 className="text-lg sm:text-xl font-bold mb-3 sm:mb-4">📝 Kiritilgan savollar:</h2>
-        {questions.length === 0 ? (
-            <p className="text-gray-500 text-center py-6 sm:py-8 text-sm sm:text-base">Savollar yo'q. Birinchi savolni qo'shing!</p>
-        ) : (
-            <ul className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4">
-                {questions.map((q, i) => (
-                    <li key={q.id} className="p-3 sm:p-4 border rounded-lg shadow-sm bg-white">
-                        <div className="flex justify-between items-start mb-2">
-                            <b className="text-base sm:text-lg leading-tight">{i + 1}. {q.question}</b>
-                            <div className="flex gap-1 ml-2">
-                                {onEdit && (
-                                    <button
-                                        onClick={() => onEdit(q)}
-                                        className="text-blue-500 hover:text-blue-700 text-sm px-2 py-1 rounded transition-colors"
-                                        title="Tahrirlash"
-                                    >
-                                        ✏️
-                                    </button>
-                                )}
-                                {onDelete && (
-                                    <button
-                                        onClick={() => onDelete(q.id)}
-                                        className="text-red-500 hover:text-red-700 text-sm px-2 py-1 rounded transition-colors"
-                                        title="O'chirish"
-                                    >
-                                        ❌
-                                    </button>
+const QuestionList = ({ questions, onEdit, onDelete }) => {
+    if (!questions.length) {
+        return (
+            <div className="text-gray-400 italic text-center py-6 text-lg">
+                Hozircha savollar yo'q. Yangi savol qo'shing.
+            </div>
+        );
+    }
+
+    return (
+        <div className="bg-white rounded-xl shadow p-6 mb-6">
+            <h3 className="text-xl font-bold mb-4 text-blue-900 drop-shadow">Kiritilgan savollar</h3>
+            <ul className="space-y-4">
+                {questions.map((q, idx) => (
+                    <li key={q.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b pb-3 last:border-b-0 last:pb-0">
+                        <div>
+                            <span className="font-semibold text-lg text-gray-800 mr-2">{idx + 1}.</span>
+                            <span className="text-lg text-gray-900 font-medium">{q.question}</span>
+                            <div className="ml-8 mt-1 space-y-1">
+                                {Object.entries(q.options).map(([key, value]) =>
+                                    value ? (
+                                        <div key={key} className="text-base text-gray-700">{key}) {value}</div>
+                                    ) : null
                                 )}
                             </div>
                         </div>
-                        <ul className="ml-2 sm:ml-4 space-y-1">
-                            <li className="flex items-start">
-                                <span className="font-medium mr-2 text-sm sm:text-base">A)</span>
-                                <span className="text-sm sm:text-base">{q.options.A}</span>
-                            </li>
-                            <li className="flex items-start">
-                                <span className="font-medium mr-2 text-sm sm:text-base">B)</span>
-                                <span className="text-sm sm:text-base">{q.options.B}</span>
-                            </li>
-                            {q.options.C && (
-                                <li className="flex items-start">
-                                    <span className="font-medium mr-2 text-sm sm:text-base">C)</span>
-                                    <span className="text-sm sm:text-base">{q.options.C}</span>
-                                </li>
-                            )}
-                            {q.options.D && (
-                                <li className="flex items-start">
-                                    <span className="font-medium mr-2 text-sm sm:text-base">D)</span>
-                                    <span className="text-sm sm:text-base">{q.options.D}</span>
-                                </li>
-                            )}
-                        </ul>
+                        <div className="flex gap-2 mt-2 sm:mt-0">
+                            <button
+                                onClick={() => onEdit(q)}
+                                className="bg-blue-600 hover:bg-blue-800 text-white px-4 py-2 rounded-lg font-bold text-lg shadow"
+                                title="Tahrirlash"
+                            >
+                                ✏️
+                            </button>
+                            <button
+                                onClick={() => onDelete(q.id)}
+                                className="bg-red-600 hover:bg-red-800 text-white px-4 py-2 rounded-lg font-bold text-lg shadow"
+                                title="O'chirish"
+                            >
+                                ❌
+                            </button>
+                        </div>
                     </li>
                 ))}
             </ul>
-        )}
-    </div>
-);
+        </div>
+    );
+};
 
-export default QuestionList;
+export default QuestionList; 

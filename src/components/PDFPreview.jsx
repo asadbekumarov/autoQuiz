@@ -2,11 +2,12 @@ import React, { useEffect, useRef, useState } from 'react';
 import html2canvas from 'html2canvas';
 import { toast } from 'react-toastify';
 
-const PDFPreview = ({ questions, questionsPerPage }) => {
+const PDFPreview = ({ questions, questionsPerPage, onEdit, onDelete }) => {
     const [imgData, setImgData] = useState(null);
     const [currentPage, setCurrentPage] = useState(0);
     const [isLoading, setIsLoading] = useState(false);
     const previewRef = useRef();
+    const [openMenu, setOpenMenu] = useState(null);
 
     // Calculate total pages
     const totalPages = Math.ceil(questions.length / questionsPerPage);
@@ -48,30 +49,30 @@ const PDFPreview = ({ questions, questionsPerPage }) => {
     };
 
     return (
-        <div className="mt-6 sm:mt-8 w-full">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-3 sm:mb-4 gap-2">
-                <h3 className="font-semibold text-base sm:text-lg">PDF Ko'rinishi:</h3>
+        <div>
+            <div>
+                <h3 className="font-bold text-xl sm:text-2xl text-blue-900 drop-shadow">PDF Ko'rinishi:</h3>
                 {totalPages > 1 && (
-                    <div className="flex items-center gap-2">
+                    <div>
                         <button
                             onClick={prevPage}
                             disabled={currentPage === 0}
-                            className={`px-2 sm:px-3 py-1 rounded text-sm ${currentPage === 0
+                            className={`px-4 sm:px-6 py-2 rounded-lg text-lg font-bold shadow transition-colors ${currentPage === 0
                                 ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                                : 'bg-blue-500 text-white hover:bg-blue-600'
+                                : 'bg-blue-700 text-white hover:bg-blue-800'
                                 }`}
                         >
                             ← Oldingi
                         </button>
-                        <span className="text-xs sm:text-sm">
+                        <span className="text-base sm:text-lg font-semibold text-gray-700">
                             Sahifa {currentPage + 1} / {totalPages}
                         </span>
                         <button
                             onClick={nextPage}
                             disabled={currentPage === totalPages - 1}
-                            className={`px-2 sm:px-3 py-1 rounded text-sm ${currentPage === totalPages - 1
+                            className={`px-4 sm:px-6 py-2 rounded-lg text-lg font-bold shadow transition-colors ${currentPage === totalPages - 1
                                 ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                                : 'bg-blue-500 text-white hover:bg-blue-600'
+                                : 'bg-blue-700 text-white hover:bg-blue-800'
                                 }`}
                         >
                             Keyingi →
@@ -94,31 +95,61 @@ const PDFPreview = ({ questions, questionsPerPage }) => {
                         boxShadow: '0 0 8px #ccc',
                     }}
                 >
-                    <div style={{ textAlign: 'center', marginBottom: '30px', fontSize: '24px', fontWeight: 'bold' }}>
+                    {/* <div style={{ textAlign: 'center', marginBottom: '30px', fontSize: '24px', fontWeight: 'bold' }}>
                         Test Savollari
                     </div>
 
                     <div style={{ textAlign: 'center', marginBottom: '20px', fontSize: '14px', color: '#666' }}>
                         Sahifa {currentPage + 1} / {totalPages}
-                    </div>
+                    </div> */}
 
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '10px' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '16px' }}>
                         {pageQuestions.map((q, idx) => (
                             <div key={q.id} style={{
-                                padding: '10px',
-                                border: '1px solid #ddd',
-                                borderRadius: '6px',
+                                padding: '18px',
+                                borderRadius: '10px',
                                 breakInside: 'avoid',
-                                fontSize: '12px'
+                                fontSize: '18px',
+                                position: 'relative',
+                                background: '#f3f4f6',
+                                boxShadow: '0 2px 8px #e0e7ef',
+                                border: '2px solid #2563eb',
                             }}>
-                                <div style={{ fontWeight: 'bold', marginBottom: '6px', fontSize: '14px' }}>
-                                    {startIndex + idx + 1}. {q.question}
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                                    <span style={{ fontWeight: 'bold', fontSize: '20px', color: '#1e293b' }}>
+                                        {startIndex + idx + 1}. {q.question}
+                                    </span>
+                                    <div style={{ position: 'relative' }}>
+                                        <button
+                                            onClick={() => setOpenMenu(openMenu === q.id ? null : q.id)}
+                                            style={{ background: '#2563eb', border: 'none', color: 'white', cursor: 'pointer', fontSize: '22px', borderRadius: '6px', padding: '4px 10px', boxShadow: '0 1px 4px #b6c6e6' }}
+                                            title="Amallar"
+                                        >
+                                            ⋮
+                                        </button>
+                                        {openMenu === q.id && (
+                                            <div style={{ position: 'absolute', right: 0, top: '110%', background: 'white', border: '1px solid #ddd', borderRadius: '8px', boxShadow: '0 2px 8px #e0e7ef', zIndex: 10, minWidth: '120px' }}>
+                                                <button
+                                                    onClick={() => { setOpenMenu(null); onEdit(q); }}
+                                                    style={{ display: 'block', width: '100%', padding: '10px', background: 'none', border: 'none', color: '#2563eb', fontWeight: 'bold', fontSize: '16px', textAlign: 'left', cursor: 'pointer', borderBottom: '1px solid #eee' }}
+                                                >
+                                                    ✏️ Tahrirlash
+                                                </button>
+                                                <button
+                                                    onClick={() => { setOpenMenu(null); onDelete(q.id); }}
+                                                    style={{ display: 'block', width: '100%', padding: '10px', background: 'none', border: 'none', color: '#dc2626', fontWeight: 'bold', fontSize: '16px', textAlign: 'left', cursor: 'pointer' }}
+                                                >
+                                                    ❌ O'chirish
+                                                </button>
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
-                                <div style={{ marginLeft: '10px' }}>
-                                    <div style={{ margin: '2px 0', fontSize: '11px' }}>A) {q.options.A}</div>
-                                    <div style={{ margin: '2px 0', fontSize: '11px' }}>B) {q.options.B}</div>
-                                    {q.options.C && <div style={{ margin: '2px 0', fontSize: '11px' }}>C) {q.options.C}</div>}
-                                    {q.options.D && <div style={{ margin: '2px 0', fontSize: '11px' }}>D) {q.options.D}</div>}
+                                <div style={{ marginLeft: '16px' }}>
+                                    <div style={{ margin: '4px 0', fontSize: '16px', color: '#334155' }}>A) {q.options.A}</div>
+                                    <div style={{ margin: '4px 0', fontSize: '16px', color: '#334155' }}>B) {q.options.B}</div>
+                                    {q.options.C && <div style={{ margin: '4px 0', fontSize: '16px', color: '#334155' }}>C) {q.options.C}</div>}
+                                    {q.options.D && <div style={{ margin: '4px 0', fontSize: '16px', color: '#334155' }}>D) {q.options.D}</div>}
                                 </div>
                             </div>
                         ))}
@@ -135,7 +166,6 @@ const PDFPreview = ({ questions, questionsPerPage }) => {
                     <img
                         src={imgData}
                         alt="PDF Preview"
-                        className="w-full max-w-2xl border rounded shadow mt-2 mx-auto"
                         style={{ background: 'white' }}
                     />
                 </div>

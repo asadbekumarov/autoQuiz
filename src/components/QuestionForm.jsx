@@ -1,120 +1,142 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+
+const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
 
 const QuestionForm = ({ onAdd, editingQuestion, onUpdate, onCancelEdit }) => {
-    const [questionText, setQuestionText] = useState(editingQuestion ? editingQuestion.question : '');
-    const [options, setOptions] = useState(editingQuestion ? editingQuestion.options : { A: '', B: '', C: '', D: '' });
+    const [questionText, setQuestionText] = useState('');
+    const [options, setOptions] = useState({ A: '', B: '' });
+    const [dynamicOptions, setDynamicOptions] = useState([]);
     const [error, setError] = useState('');
 
-    // Update form when editing question changes
-    React.useEffect(() => {
+    useEffect(() => {
         if (editingQuestion) {
             setQuestionText(editingQuestion.question);
-            setOptions(editingQuestion.options);
+            const fixedOptions = { A: editingQuestion.options.A || '', B: editingQuestion.options.B || '' };
+            const other = Object.keys(editingQuestion.options)
+                .filter(k => k !== 'A' && k !== 'B')
+                .map(k => [k, editingQuestion.options[k]]);
+            setOptions(fixedOptions);
+            setDynamicOptions(other);
         } else {
             setQuestionText('');
-            setOptions({ A: '', B: '', C: '', D: '' });
+            setOptions({ A: '', B: '' });
+            setDynamicOptions([]);
         }
     }, [editingQuestion]);
 
     const handleSubmit = () => {
         setError('');
-
         if (!questionText.trim()) {
             setError('Savol matni kiritilmagan');
             return;
         }
 
         if (!options.A.trim() || !options.B.trim()) {
-            setError('A va B variantlari to\'ldirilishi majburiy');
+            setError('A va B variantlari majburiy');
             return;
         }
 
+        const allOptions = { ...options };
+        dynamicOptions.forEach(([k, v]) => {
+            allOptions[k] = v.trim();
+        });
+
         const questionData = {
             question: questionText.trim(),
-            options: {
-                A: options.A.trim(),
-                B: options.B.trim(),
-                C: options.C.trim(),
-                D: options.D.trim()
-            }
+            options: allOptions,
         };
 
-        if (editingQuestion) {
-            onUpdate(editingQuestion.id, questionData);
-        } else {
-            onAdd(questionData);
-        }
+        editingQuestion ? onUpdate(editingQuestion.id, questionData) : onAdd(questionData);
 
         setQuestionText('');
-        setOptions({ A: '', B: '', C: '', D: '' });
+        setOptions({ A: '', B: '' });
+        setDynamicOptions([]);
     };
 
-    const handleKeyPress = (e) => {
-        if (e.key === 'Enter') {
-            handleSubmit();
+    const handleAddOption = () => {
+        const used = ['A', 'B', ...dynamicOptions.map(([k]) => k)];
+        const next = alphabet.find(l => !used.includes(l));
+        if (next) {
+            setDynamicOptions([...dynamicOptions, [next, '']]);
         }
     };
 
     const handleCancel = () => {
         setQuestionText('');
-        setOptions({ A: '', B: '', C: '', D: '' });
+        setOptions({ A: '', B: '' });
+        setDynamicOptions([]);
         setError('');
-        onCancelEdit();
+        onCancelEdit && onCancelEdit();
     };
 
     return (
-        <div className="w-full max-w-md mx-auto space-y-3 sm:space-y-4 p-4 sm:p-6 bg-gray-50 rounded-lg">
-            <h3 className="text-lg font-semibold text-center">
-                {editingQuestion ? 'Savolni tahrirlash' : 'Yangi savol qo\'shish'}
-            </h3>
+        <div className=" bg-white">
+            <h2 className="text-2xl font-bold text-center text-blue-900 drop-shadow">{editingQuestion ? '✏️ Savolni tahrirlash' : '➕ Yangi savol'}</h2>
 
-            {error && (
-                <div className="text-red-500 text-sm text-center bg-red-100 p-2 rounded">
-                    {error}
-                </div>
-            )}
+            {error && <div className="text-red-700 bg-red-100 px-4 py-3 rounded text-base font-semibold text-center">{error}</div>}
 
             <div>
-                <label className="block text-sm font-medium mb-1">Savol matni: <span className="text-red-500">*</span></label>
+                <label className="block font-bold text-lg mb-2 text-gray-800">Savol matni <span className="text-red-500">*</span></label>
                 <textarea
                     value={questionText}
                     onChange={e => setQuestionText(e.target.value)}
-                    onKeyPress={handleKeyPress}
-                    placeholder="Savol matnini kiriting..."
-                    className="w-full p-2 sm:p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
+                    placeholder="Savolni yozing..."
                     rows="3"
+                    className="w-full border-2 border-gray-300 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-blue-600 text-lg bg-gray-50"
                 />
             </div>
 
-            <div className="space-y-2 sm:space-y-3">
-                <label className="block text-sm font-medium">Variantlar:</label>
-                {['A', 'B', 'C', 'D'].map(opt => (
-                    <div key={opt} className="flex items-center">
-                        <span className="font-medium mr-2 w-6 text-sm sm:text-base">{opt})</span>
+            <div className="space-y-3">
+                <label className="block font-bold text-lg text-gray-800">Variantlar:</label>
+
+                {['A', 'B'].map((key) => (
+                    <div key={key} className="flex items-center gap-3">
+                        <span className="w-8 font-bold text-lg text-gray-700">{key})</span>
                         <input
-                            value={options[opt]}
-                            onChange={e => setOptions({ ...options, [opt]: e.target.value })}
-                            onKeyPress={handleKeyPress}
-                            placeholder={`${opt} variant ${opt === 'A' || opt === 'B' ? '(majburiy)' : '(ixtiyoriy)'}`}
-                            className={`flex-1 p-2 border rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base ${(opt === 'A' || opt === 'B') && !options[opt].trim() ? 'border-red-300' : ''
-                                }`}
+                            value={options[key]}
+                            onChange={e => setOptions({ ...options, [key]: e.target.value })}
+                            placeholder={`${key} variant (majburiy)`}
+                            className="flex-1 border-2 border-gray-300 rounded-lg p-3 text-lg focus:ring-2 focus:ring-blue-600 bg-gray-50"
                         />
-                        {(opt === 'A' || opt === 'B') && <span className="text-red-500 ml-1 text-sm">*</span>}
+                        <span className="text-red-500 text-lg font-bold">*</span>
+                    </div>
+                ))}
+
+                {dynamicOptions.map(([key, value], index) => (
+                    <div key={key} className="flex items-center gap-3">
+                        <span className="w-8 font-bold text-lg text-gray-700">{key})</span>
+                        <input
+                            value={value}
+                            onChange={e => {
+                                const newOptions = [...dynamicOptions];
+                                newOptions[index] = [key, e.target.value];
+                                setDynamicOptions(newOptions);
+                            }}
+                            placeholder={`${key} variant (ixtiyoriy)`}
+                            className="flex-1 border-2 border-gray-300 rounded-lg p-3 text-lg focus:ring-2 focus:ring-blue-600 bg-gray-50"
+                        />
                     </div>
                 ))}
             </div>
 
-            <div className="flex flex-col sm:flex-row gap-2">
+            <button
+                onClick={handleAddOption}
+                className="text-lg bg-green-600 hover:bg-green-700 text-white py-2 px-5 rounded-lg font-semibold shadow"
+            >
+                ➕ Variant qo‘shish
+            </button>
+
+            <div className="flex flex-col sm:flex-row gap-3">
                 <button
                     onClick={handleSubmit}
-                    className="flex-1 bg-blue-500 hover:bg-blue-600 text-white px-3 sm:px-4 py-2 sm:py-3 rounded-lg font-medium transition-colors text-sm sm:text-base"
+                    className="flex-1 bg-blue-700 hover:bg-blue-800 text-white py-3 rounded-lg text-lg font-bold shadow"
                 >
-                    {editingQuestion ? '✏️ Tahrirlash' : '➕ Savol qo\'shish'}
+                    {editingQuestion ? '✏️ Saqlash' : '➕ Qo‘shish'}
                 </button>
                 {editingQuestion && (
                     <button
                         onClick={handleCancel}
-                        className="px-3 sm:px-4 py-2 sm:py-3 bg-gray-500 hover:bg-gray-600 text-white rounded-lg font-medium transition-colors text-sm sm:text-base"
+                        className="bg-gray-600 hover:bg-gray-700 text-white py-3 px-6 rounded-lg text-lg font-bold shadow"
                     >
                         ❌ Bekor
                     </button>

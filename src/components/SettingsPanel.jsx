@@ -1,20 +1,20 @@
 import React from 'react';
 
 const SettingsPanel = ({ value, onChange }) => (
-    <div className="w-full max-w-md mx-auto p-3 sm:p-4 bg-blue-50 rounded-lg">
-        <label className="block font-medium mb-2 text-blue-800 text-sm sm:text-base">
+    <div>
+        <label className="block font-bold mb-3 text-blue-900 text-lg sm:text-xl">
             Har A4 sahifada nechta savol chiqsin?
         </label>
         <select
             value={value}
             onChange={e => onChange(parseInt(e.target.value))}
-            className="w-full p-2 sm:p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white text-sm sm:text-base"
+            className="w-full p-4 sm:p-5 border-2 border-blue-400 rounded-xl focus:ring-2 focus:ring-blue-700 focus:border-blue-700 bg-white text-lg sm:text-xl font-semibold text-blue-900"
         >
             {[3, 4, 5, 6, 7, 8, 9, 10].map(num => (
                 <option key={num} value={num}>{num} ta</option>
             ))}
         </select>
-        <p className="text-xs sm:text-sm text-gray-600 mt-2">
+        <p className="text-base sm:text-lg text-blue-700 mt-3 font-medium">
             Ko'proq savol = kamroq sahifa, lekin matn kichikroq bo'ladi
         </p>
     </div>
