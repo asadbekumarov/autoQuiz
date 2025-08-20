@@ -1,6 +1,9 @@
 import React from 'react'
+import { useNavigate } from 'react-router-dom'
 
 function Templates() {
+    const navigate = useNavigate();
+
     return (
         <section className='bg-gray-50 flex items-center justify-center'>
             <div className="max-w-7xl mx-auto flex items-center justify-between p-4">
@@ -22,9 +25,12 @@ function Templates() {
                             <div className="p-6">
                                 <h4 className="text-xl font-semibold text-gray-800 mb-2">Matematika testi</h4>
                                 <p className="text-gray-600 mb-4">Algebra va geometriya savollar uchun</p>
-                                <a href="#" className="inline-block bg-green-500 text-white py-2 px-4 rounded-lg text-sm font-medium hover:bg-green-600 transition-colors">
+                                <button
+                                    onClick={() => navigate('/templates')}
+                                    className="inline-block bg-green-500 text-white py-2 px-4 rounded-lg text-sm font-medium hover:bg-green-600 transition-colors"
+                                >
                                     Tanlash
-                                </a>
+                                </button>
                             </div>
                         </div>
 
@@ -37,10 +43,13 @@ function Templates() {
                             />
                             <div className="p-6">
                                 <h4 className="text-xl font-semibold text-gray-800 mb-2">Ona tili testi</h4>
-                                <p className="text-gray-600 mb-4">O‘zbek tili grammatika va imlo</p>
-                                <a href="#" className="inline-block bg-green-500 text-white py-2 px-4 rounded-lg text-sm font-medium hover:bg-green-600 transition-colors">
+                                <p className="text-gray-600 mb-4">O'zbek tili grammatika va imlo</p>
+                                <button
+                                    onClick={() => navigate('/templates')}
+                                    className="inline-block bg-green-500 text-white py-2 px-4 rounded-lg text-sm font-medium hover:bg-green-600 transition-colors"
+                                >
                                     Tanlash
-                                </a>
+                                </button>
                             </div>
                         </div>
 
@@ -53,10 +62,13 @@ function Templates() {
                             />
                             <div className="p-6">
                                 <h4 className="text-xl font-semibold text-gray-800 mb-2">Tarix testi</h4>
-                                <p className="text-gray-600 mb-4">O‘zbekiston tarixi va jahon tarixi</p>
-                                <a href="#" className="inline-block bg-green-500 text-white py-2 px-4 rounded-lg text-sm font-medium hover:bg-green-600 transition-colors">
+                                <p className="text-gray-600 mb-4">O'zbekiston tarixi va jahon tarixi</p>
+                                <button
+                                    onClick={() => navigate('/templates')}
+                                    className="inline-block bg-green-500 text-white py-2 px-4 rounded-lg text-sm font-medium hover:bg-green-600 transition-colors"
+                                >
                                     Tanlash
-                                </a>
+                                </button>
                             </div>
                         </div>
                     </div>

@@ -1,7 +1,10 @@
 import React from 'react'
 import { FaBook } from "react-icons/fa";
+import { useNavigate } from 'react-router-dom';
 
 function Footer() {
+    const navigate = useNavigate();
+
     return (
         <footer className="bg-[#1e293b] text-sm">
             <div className="max-w-7xl mx-auto px-4 py-10">
@@ -13,7 +16,7 @@ function Footer() {
                             <h1 className="text-xl font-bold text-white">AutoQuiz</h1>
                         </div>
                         <p className="text-[#94a3b8] mt-5 leading-relaxed">
-                            O‘qituvchilar uchun eng qulay test yaratish tizimi. Vaqtingizni tejang, sifatni oshiring.
+                            O'qituvchilar uchun eng qulay test yaratish tizimi. Vaqtingizni tejang, sifatni oshiring.
                         </p>
                     </div>
 
@@ -21,19 +24,19 @@ function Footer() {
                     <div>
                         <h5 className="text-white font-semibold mb-4">Havolalar</h5>
                         <ul className="space-y-2">
-                            <li><a href="#" className="text-[#94a3b8] hover:text-white transition">Shablonlar</a></li>
-                            <li><a href="#" className="text-[#94a3b8] hover:text-white transition">Test yaratish</a></li>
-                            <li><a href="#" className="text-[#94a3b8] hover:text-white transition">Dashboard</a></li>
+                            <li><button onClick={() => navigate('/templates')} className="text-[#94a3b8] hover:text-white transition cursor-pointer">Shablonlar</button></li>
+                            <li><button onClick={() => navigate('/create')} className="text-[#94a3b8] hover:text-white transition cursor-pointer">Test yaratish</button></li>
+                            <li><button onClick={() => navigate('/my-tests')} className="text-[#94a3b8] hover:text-white transition cursor-pointer">Dashboard</button></li>
                         </ul>
                     </div>
 
-                    {/* Bog‘lanish */}
+                    {/* Bog'lanish */}
                     <div>
-                        <h5 className="text-white font-semibold mb-4">Bog‘lanish</h5>
+                        <h5 className="text-white font-semibold mb-4">Bog'lanish</h5>
                         <ul className="space-y-2">
-                            <li ><a href="#" className="text-[#94a3b8] hover:text-white transition">info@autoquiz.uz</a></li>
-                            <li ><a href="#" className="text-[#94a3b8] hover:text-white transition">+998 (94) 901-12-02</a></li>
-                            <li ><a href="#" className="text-[#94a3b8] hover:text-white transition">Toshkent, O‘zbekiston</a></li>
+                            <li ><a href="mailto:info@autoquiz.uz" className="text-[#94a3b8] hover:text-white transition">info@autoquiz.uz</a></li>
+                            <li ><a href="tel:+998949011202" className="text-[#94a3b8] hover:text-white transition">+998 (94) 901-12-02</a></li>
+                            <li ><span className="text-[#94a3b8]">Toshkent, O'zbekiston</span></li>
                         </ul>
                     </div>
                 </div>

@@ -1,9 +1,379 @@
-import React from 'react'
+import React, { useState, useEffect } from 'react';
+import { Trash2, Eye, Download } from 'lucide-react';
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
 
 function MyTestsPage() {
+    const [searchTerm, setSearchTerm] = useState('');
+    const [savedTests, setSavedTests] = useState([]);
+    const [selectedTest, setSelectedTest] = useState(null);
+
+    useEffect(() => {
+        const storedTests = JSON.parse(localStorage.getItem('savedTests') || '[]');
+        setSavedTests(storedTests);
+    }, []);
+
+    const filteredTests = savedTests.filter(test =>
+        test.name.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+
+    const handleDeleteTest = (id) => {
+        const updatedTests = savedTests.filter(test => test.id !== id);
+        setSavedTests(updatedTests);
+        localStorage.setItem('savedTests', JSON.stringify(updatedTests));
+    };
+
+    const handleDownloadTest = async (test) => {
+        const format = prompt('Qaysi formatda yuklab olmoqchisiz? (pdf/png)', 'pdf').toLowerCase();
+
+        if (!format || (format !== 'pdf' && format !== 'png')) {
+            alert('Noto\'g\'ri format kiritildi. Iltimos, "pdf" yoki "png" ni kiriting.');
+            return;
+        }
+
+        if (format === 'pdf') {
+            // Create temporary preview element
+            const tempContainer = document.createElement('div');
+            tempContainer.className = 'fixed top-0 left-0 w-full h-full bg-white z-50 overflow-hidden';
+            tempContainer.style.cssText = 'width: 210mm; height: 297mm; margin: 0; padding: 0;';
+
+            // Split questions into pages
+            const questionsPerPage = 10;
+            const totalPages = Math.ceil(test.questions.length / questionsPerPage);
+
+            for (let page = 0; page < totalPages; page++) {
+                const pageDiv = document.createElement('div');
+                pageDiv.className = 'page bg-white';
+                pageDiv.style.cssText = `
+                    width: 210mm;
+                    height: 297mm;
+                    padding: 10mm;
+                    box-sizing: border-box;
+                    position: relative;
+                    page-break-after: ${page < totalPages - 1 ? 'always' : 'avoid'};
+                `;
+
+                // Header
+                const headerDiv = document.createElement('div');
+                headerDiv.className = 'text-center mb-6';
+                headerDiv.innerHTML = `
+                    <h1 class="text-xl font-bold text-gray-800 mb-1">${test.name}</h1>
+                    <div class="text-xs text-gray-600 flex justify-between">
+                        <span>Jami savollar: ${test.questions.length}</span>
+                        <span>Sahifa: ${page + 1}/${totalPages}</span>
+                    </div>
+                    <div class="border-b border-gray-300 my-2"></div>
+                `;
+                pageDiv.appendChild(headerDiv);
+
+                // Questions
+                const startIdx = page * questionsPerPage;
+                const endIdx = Math.min(startIdx + questionsPerPage, test.questions.length);
+                const pageQuestions = test.questions.slice(startIdx, endIdx);
+
+                // Split questions into 2 columns: left column (questions 1-5) and right column (questions 6-10)
+                const leftColumnQuestions = pageQuestions.slice(0, 5);
+                const rightColumnQuestions = pageQuestions.slice(5, 10);
+
+                // Create columns container
+                const columnsContainer = document.createElement('div');
+                columnsContainer.style.cssText = 'display: flex; gap: 5mm; height: calc(100% - 60px);';
+
+                // Left Column
+                const leftColumn = document.createElement('div');
+                leftColumn.style.cssText = 'flex: 1; display: flex; flex-direction: column; gap: 8mm;';
+
+                leftColumnQuestions.forEach((q, i) => {
+                    const globalIndex = startIdx + i;
+                    const questionDiv = document.createElement('div');
+                    questionDiv.style.cssText = 'flex: 1; padding: 3mm; box-sizing: border-box; border: 1px solid #e5e7eb; border-radius: 2mm;';
+                    questionDiv.innerHTML = `
+                        <div class="question-content font-medium text-gray-800 mb-2">
+                            ${globalIndex + 1}. ${q.text}
+                        </div>
+                        <div class="answer-options">
+                            ${q.answers.filter(a => a.trim()).map((a, j) => `
+                                <div class="answer-option flex items-center mb-1" style="margin-left: 5mm; margin-bottom: 1mm; font-size: 10pt;">
+                                    <div class="w-3 h-3 border border-gray-400 rounded mr-1"></div>
+                                    <span>${String.fromCharCode(97 + j)}) ${a}</span>
+                                </div>
+                            `).join('')}
+                        </div>
+                    `;
+                    leftColumn.appendChild(questionDiv);
+                });
+
+                // Fill empty spaces if less than 5 questions
+                for (let i = leftColumnQuestions.length; i < 5; i++) {
+                    const emptyDiv = document.createElement('div');
+                    emptyDiv.style.cssText = 'flex: 1; padding: 3mm; box-sizing: border-box;';
+                    leftColumn.appendChild(emptyDiv);
+                }
+
+                // Right Column
+                const rightColumn = document.createElement('div');
+                rightColumn.style.cssText = 'flex: 1; display: flex; flex-direction: column; gap: 8mm;';
+
+                rightColumnQuestions.forEach((q, i) => {
+                    const globalIndex = startIdx + 5 + i;
+                    const questionDiv = document.createElement('div');
+                    questionDiv.style.cssText = 'flex: 1; padding: 3mm; box-sizing: border-box; border: 1px solid #e5e7eb; border-radius: 2mm;';
+                    questionDiv.innerHTML = `
+                        <div class="question-content font-medium text-gray-800 mb-2">
+                            ${globalIndex + 1}. ${q.text}
+                        </div>
+                        <div class="answer-options">
+                            ${q.answers.filter(a => a.trim()).map((a, j) => `
+                                <div class="answer-option flex items-center mb-1" style="margin-left: 5mm; margin-bottom: 1mm; font-size: 10pt;">
+                                    <div class="w-3 h-3 border border-gray-400 rounded mr-1"></div>
+                                    <span>${String.fromCharCode(97 + j)}) ${a}</span>
+                                </div>
+                            `).join('')}
+                        </div>
+                    `;
+                    rightColumn.appendChild(questionDiv);
+                });
+
+                // Fill empty spaces if less than 5 questions
+                for (let i = rightColumnQuestions.length; i < 5; i++) {
+                    const emptyDiv = document.createElement('div');
+                    emptyDiv.style.cssText = 'flex: 1; padding: 3mm; box-sizing: border-box;';
+                    rightColumn.appendChild(emptyDiv);
+                }
+
+                columnsContainer.appendChild(leftColumn);
+                columnsContainer.appendChild(rightColumn);
+                pageDiv.appendChild(columnsContainer);
+
+                tempContainer.appendChild(pageDiv);
+            }
+
+            // Add to document temporarily
+            document.body.appendChild(tempContainer);
+
+            // Generate PDF
+            const doc = new jsPDF({
+                orientation: 'portrait',
+                unit: 'mm',
+                format: 'a4',
+            });
+
+            const pages = tempContainer.querySelectorAll('.page');
+
+            for (let i = 0; i < pages.length; i++) {
+                if (i > 0) doc.addPage();
+
+                const canvas = await html2canvas(pages[i], {
+                    scale: 2,
+                    useCORS: true,
+                    logging: false
+                });
+
+                const imgData = canvas.toDataURL('image/png');
+                doc.addImage(imgData, 'PNG', 0, 0, 210, 297);
+            }
+
+            // Remove temporary element
+            document.body.removeChild(tempContainer);
+
+            // Save PDF
+            doc.save(`${test.name}-${Date.now()}.pdf`);
+
+        } else if (format === 'png') {
+            // Create temporary preview element for PNG
+            const tempContainer = document.createElement('div');
+            tempContainer.className = 'fixed top-0 left-0 w-full h-full bg-white z-50 overflow-hidden';
+            tempContainer.style.cssText = 'width: 210mm; height: 297mm; margin: 0; padding: 0;';
+
+            // Header
+            tempContainer.innerHTML = `
+                <div class="page bg-white" style="width: 210mm; height: 297mm; padding: 10mm; box-sizing: border-box;">
+                    <div class="text-center mb-6">
+                        <h1 class="text-xl font-bold text-gray-800 mb-1">${test.name}</h1>
+                        <div class="text-xs text-gray-600">
+                            Jami savollar: ${test.questions.length}
+                        </div>
+                        <div class="border-b border-gray-300 my-2"></div>
+                    </div>
+            `;
+
+            // First 10 questions (2 columns x 5 questions each)
+            const displayQuestions = test.questions.slice(0, 10);
+            const leftColumnQuestions = displayQuestions.slice(0, 5);
+            const rightColumnQuestions = displayQuestions.slice(5, 10);
+
+            // Create columns container
+            tempContainer.innerHTML += '<div style="display: flex; gap: 5mm; height: calc(100% - 60px);">';
+
+            // Left Column
+            tempContainer.innerHTML += '<div style="flex: 1; display: flex; flex-direction: column; gap: 8mm;">';
+            leftColumnQuestions.forEach((q, i) => {
+                tempContainer.innerHTML += `
+                    <div style="flex: 1; padding: 3mm; box-sizing: border-box; border: 1px solid #e5e7eb; border-radius: 2mm;">
+                        <div class="question-content font-medium text-gray-800 mb-2">
+                            ${i + 1}. ${q.text}
+                        </div>
+                        <div class="answer-options">
+                            ${q.answers.filter(a => a.trim()).map((a, j) => `
+                                <div class="answer-option flex items-center mb-1" style="margin-left: 5mm; margin-bottom: 1mm; font-size: 10pt;">
+                                    <div class="w-3 h-3 border border-gray-400 rounded mr-1"></div>
+                                    <span>${String.fromCharCode(97 + j)}) ${a}</span>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+            });
+            // Fill empty spaces
+            for (let i = leftColumnQuestions.length; i < 5; i++) {
+                tempContainer.innerHTML += '<div style="flex: 1; padding: 3mm; box-sizing: border-box;"></div>';
+            }
+            tempContainer.innerHTML += '</div>';
+
+            // Right Column
+            tempContainer.innerHTML += '<div style="flex: 1; display: flex; flex-direction: column; gap: 8mm;">';
+            rightColumnQuestions.forEach((q, i) => {
+                tempContainer.innerHTML += `
+                    <div style="flex: 1; padding: 3mm; box-sizing: border-box; border: 1px solid #e5e7eb; border-radius: 2mm;">
+                        <div class="question-content font-medium text-gray-800 mb-2">
+                            ${i + 6}. ${q.text}
+                        </div>
+                        <div class="answer-options">
+                            ${q.answers.filter(a => a.trim()).map((a, j) => `
+                                <div class="answer-option flex items-center mb-1" style="margin-left: 5mm; margin-bottom: 1mm; font-size: 10pt;">
+                                    <div class="w-3 h-3 border border-gray-400 rounded mr-1"></div>
+                                    <span>${String.fromCharCode(97 + j)}) ${a}</span>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+            });
+            // Fill empty spaces
+            for (let i = rightColumnQuestions.length; i < 5; i++) {
+                tempContainer.innerHTML += '<div style="flex: 1; padding: 3mm; box-sizing: border-box;"></div>';
+            }
+            tempContainer.innerHTML += '</div>';
+
+            tempContainer.innerHTML += '</div>'; // Close columns container
+            tempContainer.innerHTML += '</div>'; // Close page
+            document.body.appendChild(tempContainer);
+
+            // Generate PNG
+            const canvas = await html2canvas(tempContainer, {
+                scale: 2,
+                useCORS: true,
+                logging: false
+            });
+
+            // Remove temporary element
+            document.body.removeChild(tempContainer);
+
+            // Save PNG
+            const link = document.createElement('a');
+            link.download = `${test.name}-${Date.now()}.png`;
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+        }
+    };
+
     return (
-        <div>MyTestsPage</div>
-    )
+        <section className="bg-green-50 min-h-screen py-8 px-4">
+            <div className="max-w-5xl mx-auto">
+                <h1 className="text-3xl font-bold text-gray-800 mb-6 text-center">📚 Mening testlarim</h1>
+
+                <div className="mb-6 relative max-w-md mx-auto">
+                    <input
+                        type="text"
+                        placeholder="Qidirish..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="w-full border-2 border-green-300 p-3 rounded-lg focus:ring-2 focus:ring-green-400 focus:outline-none text-lg"
+                    />
+                </div>
+
+                {filteredTests.length > 0 ? (
+                    <div className="grid gap-4 md:grid-cols-2">
+                        {filteredTests.map((test) => (
+                            <div
+                                key={test.id}
+                                className="bg-white shadow-md rounded-lg p-4 flex flex-col justify-between hover:shadow-lg transition"
+                            >
+                                <div className="mb-4">
+                                    <h2 className="text-lg font-semibold text-gray-800 mb-2">{test.name}</h2>
+                                    <p className="text-gray-600 text-sm">
+                                        Savollar soni: {test.questionsCount || test.questions.length}
+                                    </p>
+                                    <p className="text-gray-500 text-xs mt-1">
+                                        Qo'shilgan sana: {new Date(test.createdAt).toLocaleDateString()}
+                                    </p>
+                                </div>
+                                <div className="flex gap-2 mt-auto">
+                                    <button
+                                        onClick={() => setSelectedTest(test)}
+                                        className="flex-1 bg-blue-500 hover:bg-blue-600 text-white py-2 rounded flex items-center justify-center gap-2"
+                                    >
+                                        <Eye className="w-4 h-4" /> Ko'rish
+                                    </button>
+                                    <button
+                                        onClick={() => handleDownloadTest(test)}
+                                        className="flex-1 bg-green-500 hover:bg-green-600 text-white py-2 rounded flex items-center justify-center gap-2"
+                                    >
+                                        <Download className="w-4 h-4" /> Yuklab olish
+                                    </button>
+                                    <button
+                                        onClick={() => handleDeleteTest(test.id)}
+                                        className="flex-1 bg-red-500 hover:bg-red-600 text-white py-2 rounded flex items-center justify-center gap-2"
+                                    >
+                                        <Trash2 className="w-4 h-4" /> O'chirish
+                                    </button>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                ) : (
+                    <p className="text-center text-gray-500 mt-10">Hech qanday test topilmadi 😔</p>
+                )}
+
+                {selectedTest && (
+                    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                        <div className="bg-white rounded-lg p-6 max-w-lg w-full mx-4 overflow-y-auto max-h-[90vh]">
+                            <h2 className="text-xl font-bold mb-4">{selectedTest.name}</h2>
+                            <p className="text-gray-600 mb-4">
+                                Qo'shilgan sana: {new Date(selectedTest.createdAt).toLocaleDateString()}
+                            </p>
+                            <div className="space-y-4">
+                                {selectedTest.questions.map((q, i) => (
+                                    <div key={i} className="border rounded p-3 bg-gray-50">
+                                        <p className="font-semibold">{i + 1}. {q.text}</p>
+                                        <ul className="pl-5 list-disc text-gray-700 mt-1">
+                                            {q.answers.filter(a => a.trim()).map((a, j) => (
+                                                <li key={j}>{String.fromCharCode(97 + j)}) {a}</li>
+                                            ))}
+                                        </ul>
+                                    </div>
+                                ))}
+                            </div>
+                            <div className="flex gap-2 mt-6">
+                                <button
+                                    onClick={() => handleDownloadTest(selectedTest)}
+                                    className="flex-1 bg-green-500 hover:bg-green-600 text-white py-2 rounded flex items-center justify-center gap-2"
+                                >
+                                    <Download className="w-4 h-4" /> Yuklab olish
+                                </button>
+                                <button
+                                    onClick={() => setSelectedTest(null)}
+                                    className="flex-1 bg-gray-300 hover:bg-gray-400 py-2 rounded transition"
+                                >
+                                    Yopish
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+            </div>
+        </section>
+    );
 }
 
-export default MyTestsPage
+export default MyTestsPage;
