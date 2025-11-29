@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Trash2, Eye, Download } from 'lucide-react';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
+import { FaFileAlt } from 'react-icons/fa';
 
 function MyTestsPage() {
     const [searchTerm, setSearchTerm] = useState('');
@@ -56,37 +57,44 @@ function MyTestsPage() {
                 // Header
                 const headerDiv = document.createElement('div');
                 headerDiv.className = 'text-center mb-6';
+                const s = test.settings || {};
                 headerDiv.innerHTML = `
                     <h1 class="text-xl font-bold text-gray-800 mb-1">${test.name}</h1>
                     <div class="text-xs text-gray-600 flex justify-between">
-                        <span>Jami savollar: ${test.questions.length}</span>
-                        <span>Sahifa: ${page + 1}/${totalPages}</span>
+                        <span>${s.school || ''}</span>
+                        <span>${s.subject || ''}</span>
+                        <span>${s.className || ''}</span>
+                        <span>${s.date || ''}</span>
                     </div>
-                    <div class="border-b border-gray-300 my-2"></div>
+                    <div class="mt-1 text-sm text-left">O'quvchi: ______________________________</div>
                 `;
                 pageDiv.appendChild(headerDiv);
 
-                // Questions
+                
                 const startIdx = page * questionsPerPage;
                 const endIdx = Math.min(startIdx + questionsPerPage, test.questions.length);
                 const pageQuestions = test.questions.slice(startIdx, endIdx);
 
-                // Split questions into 2 columns: left column (questions 1-5) and right column (questions 6-10)
-                const leftColumnQuestions = pageQuestions.slice(0, 5);
-                const rightColumnQuestions = pageQuestions.slice(5, 10);
+                const twoCols = (test.settings && test.settings.twoColumns) !== false;
+                const leftColumnQuestions = twoCols ? pageQuestions.slice(0, 5) : pageQuestions;
+                const rightColumnQuestions = twoCols ? pageQuestions.slice(5, 10) : [];
 
                 // Create columns container
                 const columnsContainer = document.createElement('div');
-                columnsContainer.style.cssText = 'display: flex; gap: 5mm; height: calc(100% - 60px);';
+                columnsContainer.style.cssText = twoCols
+                    ? 'display: flex; gap: 5mm; height: calc(100% - 60px);'
+                    : 'display: block; height: calc(100% - 60px)';
 
                 // Left Column
                 const leftColumn = document.createElement('div');
-                leftColumn.style.cssText = 'flex: 1; display: flex; flex-direction: column; gap: 8mm;';
+                leftColumn.style.cssText = twoCols
+                    ? 'flex: 1; display: flex; flex-direction: column; gap: 8mm;'
+                    : 'display: flex; flex-direction: column; gap: 8mm;';
 
                 leftColumnQuestions.forEach((q, i) => {
                     const globalIndex = startIdx + i;
                     const questionDiv = document.createElement('div');
-                    questionDiv.style.cssText = 'flex: 1; padding: 3mm; box-sizing: border-box; border: 1px solid #e5e7eb; border-radius: 2mm;';
+                    questionDiv.style.cssText = 'flex: 1; padding: 3mm; box-sizing: border-box;';
                     questionDiv.innerHTML = `
                         <div class="question-content font-medium text-gray-800 mb-2">
                             ${globalIndex + 1}. ${q.text}
@@ -104,10 +112,12 @@ function MyTestsPage() {
                 });
 
                 // Fill empty spaces if less than 5 questions
-                for (let i = leftColumnQuestions.length; i < 5; i++) {
-                    const emptyDiv = document.createElement('div');
-                    emptyDiv.style.cssText = 'flex: 1; padding: 3mm; box-sizing: border-box;';
-                    leftColumn.appendChild(emptyDiv);
+                if (twoCols) {
+                    for (let i = leftColumnQuestions.length; i < 5; i++) {
+                        const emptyDiv = document.createElement('div');
+                        emptyDiv.style.cssText = 'flex: 1; padding: 3mm; box-sizing: border-box;';
+                        leftColumn.appendChild(emptyDiv);
+                    }
                 }
 
                 // Right Column
@@ -117,7 +127,7 @@ function MyTestsPage() {
                 rightColumnQuestions.forEach((q, i) => {
                     const globalIndex = startIdx + 5 + i;
                     const questionDiv = document.createElement('div');
-                    questionDiv.style.cssText = 'flex: 1; padding: 3mm; box-sizing: border-box; border: 1px solid #e5e7eb; border-radius: 2mm;';
+                    questionDiv.style.cssText = 'flex: 1; padding: 3mm; box-sizing: border-box; ';
                     questionDiv.innerHTML = `
                         <div class="question-content font-medium text-gray-800 mb-2">
                             ${globalIndex + 1}. ${q.text}
@@ -135,14 +145,16 @@ function MyTestsPage() {
                 });
 
                 // Fill empty spaces if less than 5 questions
-                for (let i = rightColumnQuestions.length; i < 5; i++) {
-                    const emptyDiv = document.createElement('div');
-                    emptyDiv.style.cssText = 'flex: 1; padding: 3mm; box-sizing: border-box;';
-                    rightColumn.appendChild(emptyDiv);
+                if (twoCols) {
+                    for (let i = rightColumnQuestions.length; i < 5; i++) {
+                        const emptyDiv = document.createElement('div');
+                        emptyDiv.style.cssText = 'flex: 1; padding: 3mm; box-sizing: border-box;';
+                        rightColumn.appendChild(emptyDiv);
+                    }
                 }
 
                 columnsContainer.appendChild(leftColumn);
-                columnsContainer.appendChild(rightColumn);
+                if (twoCols) columnsContainer.appendChild(rightColumn);
                 pageDiv.appendChild(columnsContainer);
 
                 tempContainer.appendChild(pageDiv);
@@ -186,27 +198,36 @@ function MyTestsPage() {
             tempContainer.style.cssText = 'width: 210mm; height: 297mm; margin: 0; padding: 0;';
 
             // Header
+            const s = test.settings || {};
             tempContainer.innerHTML = `
                 <div class="page bg-white" style="width: 210mm; height: 297mm; padding: 10mm; box-sizing: border-box;">
                     <div class="text-center mb-6">
                         <h1 class="text-xl font-bold text-gray-800 mb-1">${test.name}</h1>
-                        <div class="text-xs text-gray-600">
-                            Jami savollar: ${test.questions.length}
+                        <div class="text-xs text-gray-600 flex justify-between">
+                            <span>${s.school || ''}</span>
+                            <span>${s.subject || ''}</span>
+                            <span>${s.className || ''}</span>
+                            <span>${s.date || ''}</span>
                         </div>
-                        <div class="border-b border-gray-300 my-2"></div>
+                        <div class="mt-1 text-sm text-left">O'quvchi: ______________________________</div>
                     </div>
             `;
 
             // First 10 questions (2 columns x 5 questions each)
-            const displayQuestions = test.questions.slice(0, 10);
-            const leftColumnQuestions = displayQuestions.slice(0, 5);
-            const rightColumnQuestions = displayQuestions.slice(5, 10);
+            const twoCols = (test.settings && test.settings.twoColumns) !== false;
+            const displayQuestions = test.questions.slice(0, twoCols ? 10 : 10);
+            const leftColumnQuestions = twoCols ? displayQuestions.slice(0, 5) : displayQuestions;
+            const rightColumnQuestions = twoCols ? displayQuestions.slice(5, 10) : [];
 
             // Create columns container
-            tempContainer.innerHTML += '<div style="display: flex; gap: 5mm; height: calc(100% - 60px);">';
+            tempContainer.innerHTML += twoCols
+                ? '<div style="display: flex; gap: 5mm; height: calc(100% - 60px);">'
+                : '<div style="display: block; height: calc(100% - 60px);">';
 
             // Left Column
-            tempContainer.innerHTML += '<div style="flex: 1; display: flex; flex-direction: column; gap: 8mm;">';
+            tempContainer.innerHTML += twoCols
+                ? '<div style="flex: 1; display: flex; flex-direction: column; gap: 8mm;">'
+                : '<div style="display: flex; flex-direction: column; gap: 8mm;">';
             leftColumnQuestions.forEach((q, i) => {
                 tempContainer.innerHTML += `
                     <div style="flex: 1; padding: 3mm; box-sizing: border-box; border: 1px solid #e5e7eb; border-radius: 2mm;">
@@ -225,13 +246,15 @@ function MyTestsPage() {
                 `;
             });
             // Fill empty spaces
-            for (let i = leftColumnQuestions.length; i < 5; i++) {
-                tempContainer.innerHTML += '<div style="flex: 1; padding: 3mm; box-sizing: border-box;"></div>';
+            if (twoCols) {
+                for (let i = leftColumnQuestions.length; i < 5; i++) {
+                    tempContainer.innerHTML += '<div style="flex: 1; padding: 3mm; box-sizing: border-box;"></div>';
+                }
             }
             tempContainer.innerHTML += '</div>';
 
             // Right Column
-            tempContainer.innerHTML += '<div style="flex: 1; display: flex; flex-direction: column; gap: 8mm;">';
+            if (twoCols) tempContainer.innerHTML += '<div style="flex: 1; display: flex; flex-direction: column; gap: 8mm;">';
             rightColumnQuestions.forEach((q, i) => {
                 tempContainer.innerHTML += `
                     <div style="flex: 1; padding: 3mm; box-sizing: border-box; border: 1px solid #e5e7eb; border-radius: 2mm;">
@@ -249,11 +272,12 @@ function MyTestsPage() {
                     </div>
                 `;
             });
-            // Fill empty spaces
-            for (let i = rightColumnQuestions.length; i < 5; i++) {
-                tempContainer.innerHTML += '<div style="flex: 1; padding: 3mm; box-sizing: border-box;"></div>';
+            if (twoCols) {
+                for (let i = rightColumnQuestions.length; i < 5; i++) {
+                    tempContainer.innerHTML += '<div style="flex: 1; padding: 3mm; box-sizing: border-box;"></div>';
+                }
+                tempContainer.innerHTML += '</div>';
             }
-            tempContainer.innerHTML += '</div>';
 
             tempContainer.innerHTML += '</div>'; // Close columns container
             tempContainer.innerHTML += '</div>'; // Close page
@@ -280,7 +304,8 @@ function MyTestsPage() {
     return (
         <section className="bg-green-50 min-h-screen py-8 px-4">
             <div className="max-w-5xl mx-auto">
-                <h1 className="text-3xl font-bold text-gray-800 mb-6 text-center">📚 Mening testlarim</h1>
+                <h1 className="flex items-center justify-center text-3xl font-bold text-gray-800 mb-6 text-center"><FaFileAlt />
+                    Mening testlarim</h1>
 
                 <div className="mb-6 relative max-w-md mx-auto">
                     <input
@@ -293,7 +318,7 @@ function MyTestsPage() {
                 </div>
 
                 {filteredTests.length > 0 ? (
-                    <div className="grid gap-4 md:grid-cols-2">
+                    <div className="grid m-auto gap-4 md:grid-cols-2">
                         {filteredTests.map((test) => (
                             <div
                                 key={test.id}
