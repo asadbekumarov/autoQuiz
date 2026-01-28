@@ -1,0 +1,14 @@
+{
+  "login": "Login",
+  "register": "Register",
+  "email": "Email",
+  "password": "Password",
+  "confirm": "Confirm Password",
+  "avatar": "Avatar",
+  "roleTeacher": "Teacher",
+  "roleTutor": "Tutor",
+  "roleOther": "Other",
+  "goRegister": "Go to Register",
+  "goLogin": "Go to Login"
+}
+

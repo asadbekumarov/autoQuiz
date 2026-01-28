@@ -7,3 +7,10 @@
   background-color: #0f172a; /* slate-900 */
   color: #e5e7eb; /* gray-200 */
 }
+
+@media print {
+  html, body { width: 210mm; height: 297mm; margin: 0; }
+  .page { page-break-after: always; }
+  .no-print { display: none !important; }
+  * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+}

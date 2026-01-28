@@ -31,11 +31,14 @@ import { Routes, Route } from 'react-router-dom'
 import Footer from './components/Footer'
 
 // sahifa komponentlari
-import HomePage from './pages/HomePage'
-import CreateTestPage from './pages/CreateTestPage'
-import TemplatesPage from './pages/TemplatesPage'
-import MyTestsPage from './pages/MyTestsPage'
+import HomePage from './modules/dashboard/HomePage.jsx'
+import CreateTestPage from './modules/tests/CreateTestPage.jsx'
+import TemplatesPage from './modules/tests/TemplatesPage.jsx'
+import MyTestsPage from './modules/history/MyTestsPage.jsx'
 import Header from './components/header'
+import Login from './modules/auth/Login.jsx'
+import Register from './modules/auth/Register.jsx'
+import ProfilePage from './pages/ProfilePage.jsx'
 
 function App() {
   return (
@@ -46,6 +49,9 @@ function App() {
         <Route path="/create" element={<CreateTestPage />} />
         <Route path="/templates" element={<TemplatesPage />} />
         <Route path="/my-tests" element={<MyTestsPage />} />
+        <Route path="/profile" element={<ProfilePage />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
       </Routes>
       <Footer />
     </>

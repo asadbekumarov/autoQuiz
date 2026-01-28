@@ -5,18 +5,43 @@ import html2canvas from 'html2canvas';
 import { FaFileAlt } from 'react-icons/fa';
 
 function MyTestsPage() {
+    const getLang = () => {
+        try {
+            const s = JSON.parse(localStorage.getItem('settings') || '{}');
+            return s.language || 'uz';
+        } catch { return 'uz'; }
+    };
+    const [lang, setLang] = useState(getLang());
+    const t = (key) => {
+        const dict = {
+            uz: { myTestsTitle: 'Mening testlarim', search: 'Qidirish...', questionCount: 'Savollar soni:', addedDate: "Qo'shilgan sana:", view: "Ko'rish", download: 'Yuklab olish', delete: "O'chirish", close: 'Yopish', noTestsFound: 'Hech qanday test topilmadi 😔' },
+            en: { myTestsTitle: 'My Tests', search: 'Search...', questionCount: 'Questions:', addedDate: 'Added:', view: 'View', download: 'Download', delete: 'Delete', close: 'Close', noTestsFound: 'No tests found 😔' },
+            ru: { myTestsTitle: 'Мои тесты', search: 'Поиск...', questionCount: 'Количество вопросов:', addedDate: 'Добавлено:', view: 'Просмотр', download: 'Скачать', delete: 'Удалить', close: 'Закрыть', noTestsFound: 'Тесты не найдены 😔' },
+        };
+        return (dict[lang] || dict.uz)[key] || key;
+    };
+    useEffect(() => {
+        const onSettingsChanged = () => setLang(getLang());
+        window.addEventListener('settingsChanged', onSettingsChanged);
+        return () => window.removeEventListener('settingsChanged', onSettingsChanged);
+    }, []);
     const [searchTerm, setSearchTerm] = useState('');
     const [savedTests, setSavedTests] = useState([]);
     const [selectedTest, setSelectedTest] = useState(null);
 
     useEffect(() => {
-        const storedTests = JSON.parse(localStorage.getItem('savedTests') || '[]');
+        let storedTests = [];
+        try { storedTests = JSON.parse(localStorage.getItem('savedTests') || '[]'); } catch { storedTests = []; }
         setSavedTests(storedTests);
     }, []);
 
     const filteredTests = savedTests.filter(test =>
-        test.name.toLowerCase().includes(searchTerm.toLowerCase())
+        (test.name || '').toLowerCase().includes(searchTerm.toLowerCase())
     );
+    const [page, setPage] = useState(0);
+    const pageSize = 20;
+    const pageCount = Math.ceil(filteredTests.length / pageSize);
+    const pagedTests = filteredTests.slice(page * pageSize, page * pageSize + pageSize);
 
     const handleDeleteTest = (id) => {
         const updatedTests = savedTests.filter(test => test.id !== id);
@@ -305,12 +330,12 @@ function MyTestsPage() {
         <section className="bg-green-50 min-h-screen py-8 px-4">
             <div className="max-w-5xl mx-auto">
                 <h1 className="flex items-center justify-center text-3xl font-bold text-gray-800 mb-6 text-center"><FaFileAlt />
-                    Mening testlarim</h1>
+                    {t('myTestsTitle')}</h1>
 
                 <div className="mb-6 relative max-w-md mx-auto">
                     <input
                         type="text"
-                        placeholder="Qidirish..."
+                        placeholder={t('search')}
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                         className="w-full border-2 border-green-300 p-3 rounded-lg focus:ring-2 focus:ring-green-400 focus:outline-none text-lg"
@@ -318,46 +343,55 @@ function MyTestsPage() {
                 </div>
 
                 {filteredTests.length > 0 ? (
-                    <div className="grid m-auto gap-4 md:grid-cols-2">
-                        {filteredTests.map((test) => (
-                            <div
-                                key={test.id}
-                                className="bg-white shadow-md rounded-lg p-4 flex flex-col justify-between hover:shadow-lg transition"
-                            >
-                                <div className="mb-4">
-                                    <h2 className="text-lg font-semibold text-gray-800 mb-2">{test.name}</h2>
-                                    <p className="text-gray-600 text-sm">
-                                        Savollar soni: {test.questionsCount || test.questions.length}
-                                    </p>
-                                    <p className="text-gray-500 text-xs mt-1">
-                                        Qo'shilgan sana: {new Date(test.createdAt).toLocaleDateString()}
-                                    </p>
+                    <div>
+                        <div className="grid m-auto gap-4 md:grid-cols-2">
+                            {pagedTests.map((test) => (
+                                <div
+                                    key={test.id}
+                                    className="bg-white shadow-md rounded-lg p-4 flex flex-col justify-between hover:shadow-lg transition"
+                                >
+                                    <div className="mb-4">
+                                        <h2 className="text-lg font-semibold text-gray-800 mb-2">{test.name}</h2>
+                                        <p className="text-gray-600 text-sm">
+                                            {t('questionCount')} {test.questionsCount || test.questions.length}
+                                        </p>
+                                        <p className="text-gray-500 text-xs mt-1">
+                                            {t('addedDate')} {new Date(test.createdAt).toLocaleDateString()}
+                                        </p>
+                                    </div>
+                                    <div className="flex gap-2 mt-auto">
+                                        <button
+                                            onClick={() => setSelectedTest(test)}
+                                            className="flex-1 bg-blue-500 hover:bg-blue-600 text-white py-2 rounded flex items-center justify-center gap-2"
+                                        >
+                                        <Eye className="w-4 h-4" /> {t('view')}
+                                        </button>
+                                        <button
+                                            onClick={() => handleDownloadTest(test)}
+                                            className="flex-1 bg-green-500 hover:bg-green-600 text-white py-2 rounded flex items-center justify-center gap-2"
+                                        >
+                                        <Download className="w-4 h-4" /> {t('download')}
+                                        </button>
+                                        <button
+                                            onClick={() => handleDeleteTest(test.id)}
+                                            className="flex-1 bg-red-500 hover:bg-red-600 text-white py-2 rounded flex items-center justify-center gap-2"
+                                        >
+                                        <Trash2 className="w-4 h-4" /> {t('delete')}
+                                        </button>
+                                    </div>
                                 </div>
-                                <div className="flex gap-2 mt-auto">
-                                    <button
-                                        onClick={() => setSelectedTest(test)}
-                                        className="flex-1 bg-blue-500 hover:bg-blue-600 text-white py-2 rounded flex items-center justify-center gap-2"
-                                    >
-                                        <Eye className="w-4 h-4" /> Ko'rish
-                                    </button>
-                                    <button
-                                        onClick={() => handleDownloadTest(test)}
-                                        className="flex-1 bg-green-500 hover:bg-green-600 text-white py-2 rounded flex items-center justify-center gap-2"
-                                    >
-                                        <Download className="w-4 h-4" /> Yuklab olish
-                                    </button>
-                                    <button
-                                        onClick={() => handleDeleteTest(test.id)}
-                                        className="flex-1 bg-red-500 hover:bg-red-600 text-white py-2 rounded flex items-center justify-center gap-2"
-                                    >
-                                        <Trash2 className="w-4 h-4" /> O'chirish
-                                    </button>
-                                </div>
+                            ))}
+                        </div>
+                        {pageCount > 1 && (
+                            <div className="flex items-center justify-center gap-2 mt-6">
+                                <button disabled={page===0} onClick={()=>setPage(p=>Math.max(0,p-1))} className="px-3 py-1 rounded bg-gray-200 disabled:opacity-50">Oldingi</button>
+                                <span className="text-sm">{page+1} / {pageCount}</span>
+                                <button disabled={page>=pageCount-1} onClick={()=>setPage(p=>Math.min(pageCount-1,p+1))} className="px-3 py-1 rounded bg-gray-200 disabled:opacity-50">Keyingi</button>
                             </div>
-                        ))}
+                        )}
                     </div>
                 ) : (
-                    <p className="text-center text-gray-500 mt-10">Hech qanday test topilmadi 😔</p>
+                    <p className="text-center text-gray-500 mt-10">{t('noTestsFound')}</p>
                 )}
 
                 {selectedTest && (
@@ -384,13 +418,13 @@ function MyTestsPage() {
                                     onClick={() => handleDownloadTest(selectedTest)}
                                     className="flex-1 bg-green-500 hover:bg-green-600 text-white py-2 rounded flex items-center justify-center gap-2"
                                 >
-                                    <Download className="w-4 h-4" /> Yuklab olish
+                                    <Download className="w-4 h-4" /> {t('download')}
                                 </button>
                                 <button
                                     onClick={() => setSelectedTest(null)}
                                     className="flex-1 bg-gray-300 hover:bg-gray-400 py-2 rounded transition"
                                 >
-                                    Yopish
+                                    {t('close')}
                                 </button>
                             </div>
                         </div>

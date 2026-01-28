@@ -1,0 +1,14 @@
+{
+  "login": "Kirish",
+  "register": "Ro'yxatdan o'tish",
+  "email": "Email",
+  "password": "Parol",
+  "confirm": "Parolni tasdiqlang",
+  "avatar": "Avatar",
+  "roleTeacher": "O'qituvchi",
+  "roleTutor": "Tutor",
+  "roleOther": "Boshqa",
+  "goRegister": "Ro'yxatdan o'tish sahifasiga o'tish",
+  "goLogin": "Kirish sahifasiga o'tish"
+}
+
