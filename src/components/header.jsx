@@ -5,17 +5,17 @@ import { Book, Menu, X, User, LogOut, ChevronRight } from "lucide-react";
 const Header = () => {
   const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
-  const [showLoginModal, setShowLoginModal] = useState(false);
-  const [showRegisterModal, setShowRegisterModal] = useState(false);
+  // const [showLoginModal, setShowLoginModal] = useState(false);
+  // const [showRegisterModal, setShowRegisterModal] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   // Auth states
-  const [loginForm, setLoginForm] = useState({ email: "", password: "" });
-  const [registerForm, setRegisterForm] = useState({
-    email: "",
-    password: "",
-    confirm: "",
-  });
+  // const [loginForm, setLoginForm] = useState({ email: "", password: "" });
+  // const [registerForm, setRegisterForm] = useState({
+  //   email: "",
+  //   password: "",
+  //   confirm: "",
+  // });
 
   // Mock User Data (Replace with real data from localStorage or API)
   const [userInfo, setUserInfo] = useState({
@@ -60,9 +60,9 @@ const Header = () => {
         create: "Test Yaratish",
         templates: "Shablonlar",
         mytests: "Mening testlarim",
-        login: "Kirish",
+        // login: "Kirish",
         logout: "Chiqish",
-        register: "Roʼyxatdan oʼtish",
+        // register: "Roʼyxatdan oʼtish",
         cancel: "Bekor qilish",
       },
       en: {
@@ -70,9 +70,9 @@ const Header = () => {
         create: "Create Test",
         templates: "Templates",
         mytests: "My Tests",
-        login: "Login",
+        // login: "Login",
         logout: "Logout",
-        register: "Register",
+        // register: "Register",
         cancel: "Cancel",
       },
       ru: {
@@ -80,9 +80,9 @@ const Header = () => {
         create: "Создать тест",
         templates: "Шаблоны",
         mytests: "Мои тесты",
-        login: "Войти",
+        // login: "Войти",
         logout: "Выйти",
-        register: "Регистрация",
+        // register: "Регистрация",
         cancel: "Отмена",
       },
     };
@@ -96,49 +96,49 @@ const Header = () => {
     { name: t("mytests"), path: "/my-tests" },
   ];
 
-  const handleLogin = (e) => {
-    e.preventDefault();
-    let users = [];
-    try {
-      users = JSON.parse(localStorage.getItem("users") || "[]");
-    } catch {
-      users = [];
-    }
-    if (users.includes(loginForm.email)) {
-      setIsLoggedIn(true);
-      setShowLoginModal(false);
-      localStorage.setItem("user", JSON.stringify({ email: loginForm.email }));
-      window.dispatchEvent(new Event("storage"));
-    } else {
-      alert("Email yoki parol notoʼgʼri");
-    }
-  };
+  // const handleLogin = (e) => {
+  //   e.preventDefault();
+  //   let users = [];
+  //   try {
+  //     users = JSON.parse(localStorage.getItem("users") || "[]");
+  //   } catch {
+  //     users = [];
+  //   }
+  //   if (users.includes(loginForm.email)) {
+  //     setIsLoggedIn(true);
+  //     setShowLoginModal(false);
+  //     localStorage.setItem("user", JSON.stringify({ email: loginForm.email }));
+  //     window.dispatchEvent(new Event("storage"));
+  //   } else {
+  //     alert("Email yoki parol notoʼgʼri");
+  //   }
+  // };
 
-  const handleLogout = () => {
-    setIsLoggedIn(false);
-    localStorage.removeItem("user");
-    window.dispatchEvent(new Event("storage"));
-    navigate("/login");
-  };
+  // const handleLogout = () => {
+  //   setIsLoggedIn(false);
+  //   localStorage.removeItem("user");
+  //   window.dispatchEvent(new Event("storage"));
+  //   navigate("/login");
+  // };
 
-  const handleRegister = (e) => {
-    e.preventDefault();
-    const { email, password, confirm } = registerForm;
-    if (password !== confirm) return alert("Parollar mos emas");
-    let users = [];
-    try {
-      users = JSON.parse(localStorage.getItem("users") || "[]");
-    } catch {
-      users = [];
-    }
-    if (users.includes(email))
-      return alert("Bu email allaqachon roʼyxatdan oʼtgan");
+  // const handleRegister = (e) => {
+  //   e.preventDefault();
+  //   // const { email, password, confirm } = registerForm;
+  //   if (password !== confirm) return alert("Parollar mos emas");
+  //   let users = [];
+  //   try {
+  //     users = JSON.parse(localStorage.getItem("users") || "[]");
+  //   } catch {
+  //     users = [];
+  //   }
+  //   if (users.includes(email))
+  //     return alert("Bu email allaqachon roʼyxatdan oʼtgan");
 
-    localStorage.setItem("users", JSON.stringify([...users, email]));
-    setShowRegisterModal(false);
-    setShowLoginModal(true);
-    alert("Muvaffaqiyatli! Endi kirishingiz mumkin.");
-  };
+  //   localStorage.setItem("users", JSON.stringify([...users, email]));
+  //   // setShowRegisterModal(false);
+  //   setShowLoginModal(true);
+  //   alert("Muvaffaqiyatli! Endi kirishingiz mumkin.");
+  // };
 
   return (
     <>
@@ -174,8 +174,7 @@ const Header = () => {
               ))}
             </nav>
 
-            {/* Desktop Right */}
-            <div className="hidden md:flex items-center space-x-4">
+            {/* <div className="hidden md:flex items-center space-x-4">
               {isLoggedIn ? (
                 <NavLink
                   to="/profile"
@@ -188,9 +187,9 @@ const Header = () => {
                     <span className="text-sm font-bold text-gray-700 dark:text-gray-200">
                       {userInfo.name}
                     </span>
-                    {/* <span className="text-[10px] text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded-full mt-0.5">
+                    <span className="text-[10px] text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded-full mt-0.5">
                                             {userInfo.bonus.toLocaleString()} so'm
-                                        </span> */}
+                                        </span>
                   </div>
                 </NavLink>
               ) : (
@@ -201,7 +200,7 @@ const Header = () => {
                   {t("login")}
                 </button>
               )}
-            </div>
+            </div> */}
 
             {/* Mobile Menu Button */}
             <div className="md:hidden">
@@ -246,7 +245,7 @@ const Header = () => {
               </div>
             ) : (
               <div className="p-6 text-center border-b border-gray-100">
-                <button
+                {/* <button
                   onClick={() => {
                     setShowLoginModal(true);
                     setMenuOpen(false);
@@ -254,7 +253,7 @@ const Header = () => {
                   className="w-full bg-green-600 text-white py-3 rounded-xl font-bold"
                 >
                   {t("login")}
-                </button>
+                </button> */}
               </div>
             )}
 
@@ -292,20 +291,20 @@ const Header = () => {
       </header>
 
       {/* Login Modal */}
-      {showLoginModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[60] p-4">
-          <div className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-xl">
-            <div className="flex justify-between items-center mb-6">
-              <h3 className="text-xl font-bold text-gray-900">{t("login")}</h3>
-              <button
-                onClick={() => setShowLoginModal(false)}
-                className="p-1 hover:bg-gray-100 rounded-full"
-              >
-                <X className="w-5 h-5 text-gray-500" />
-              </button>
-            </div>
-            <form onSubmit={handleLogin} className="space-y-4">
-              <input
+      {/* {showLoginModal && ( */}
+      {/* // <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[60] p-4"> */}
+      {/* <div className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-xl"> */}
+      {/* <div className="flex justify-between items-center mb-6"> */}
+      {/* <h3 className="text-xl font-bold text-gray-900">{t("login")}</h3> */}
+      {/* <button */}
+      {/* // onClick={() => setShowLoginModal(false)} */}
+      {/* className="p-1 hover:bg-gray-100 rounded-full" */}
+      {/* > */}
+      {/* <X className="w-5 h-5 text-gray-500" /> */}
+      {/* </button> */}
+      {/* </div> */}
+      {/* <form onSubmit={handleLogin} className="space-y-4"> */}
+      {/* <input
                 type="email"
                 placeholder="Email"
                 value={loginForm.email}
@@ -314,8 +313,8 @@ const Header = () => {
                 }
                 className="w-full p-3 bg-gray-50 rounded-xl border-transparent focus:bg-white focus:ring-2 focus:ring-green-500 transition-all outline-none"
                 required
-              />
-              <input
+              /> */}
+      {/* <input
                 type="password"
                 placeholder="Parol"
                 value={loginForm.password}
@@ -324,15 +323,15 @@ const Header = () => {
                 }
                 className="w-full p-3 bg-gray-50 rounded-xl border-transparent focus:bg-white focus:ring-2 focus:ring-green-500 transition-all outline-none"
                 required
-              />
-              <button
+              /> */}
+      {/* <button
                 type="submit"
                 className="w-full bg-green-600 text-white py-3 rounded-xl font-bold hover:bg-green-700 transition-colors"
               >
                 {t("login")}
-              </button>
-            </form>
-            <p className="text-center mt-4 text-sm text-gray-500">
+              </button> */}
+      {/* </form> */}
+      {/* <p className="text-center mt-4 text-sm text-gray-500">
               Akkaunt yo'qmi?{" "}
               <button
                 onClick={() => {
@@ -343,13 +342,13 @@ const Header = () => {
               >
                 {t("register")}
               </button>
-            </p>
-          </div>
-        </div>
-      )}
+            </p> */}
+      {/* </div> */}
+      {/* </div> */}
+      {/* )} */}
 
       {/* Register Modal */}
-      {showRegisterModal && (
+      {/* {showRegisterModal && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[60] p-4">
           <div className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-xl">
             <div className="flex justify-between items-center mb-6">
@@ -403,7 +402,7 @@ const Header = () => {
             </form>
           </div>
         </div>
-      )}
+      )} */}
     </>
   );
 };

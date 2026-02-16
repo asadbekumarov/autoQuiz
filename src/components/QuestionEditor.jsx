@@ -141,7 +141,7 @@ export default function QuestionEditor({
                 // </div>
               )}
             </div>
-            <label className="flex items-center gap-1 text-sm">
+            {/* <label className="flex items-center gap-1 text-sm">
               <input
                 type="radio"
                 name="correctAnswer"
@@ -151,7 +151,7 @@ export default function QuestionEditor({
                 }
               />
               {t("correct")}
-            </label>
+            </label> */}
           </div>
         ))}
       </div>

@@ -269,7 +269,7 @@ export default function CreateTestPage() {
   };
 
   const handleSaveTest = () => {
-    if (!testName.trim()) return alert(t("enterTestName"));
+    // if (!testName.trim()) return alert(t("enterTestName"));
     if (questions.length === 0) return alert(t("atLeastOneQuestion"));
 
     const newTest = {
@@ -457,15 +457,15 @@ export default function CreateTestPage() {
             {t("createTitle")}
           </h1>
 
-          <input
+          {/* <input
             type="text"
             placeholder="Test nomini kiriting..."
             value={testName}
             onChange={(e) => setTestName(e.target.value)}
             className="w-full p-3 rounded-lg border-2 focus:ring-2 focus:ring-green-400 focus:outline-none text-lg font-semibold mb-6"
-          />
+          /> */}
 
-          <div className="mb-4">
+          {/* <div className="mb-4">
             <button
               onClick={() => setSettingsOpen(!settingsOpen)}
               className="flex items-center gap-2 text-sm px-3 py-2 rounded bg-gray-100 hover:bg-gray-200"
@@ -475,7 +475,7 @@ export default function CreateTestPage() {
             {settingsOpen && (
               <TestSettings config={config} setConfig={setConfig} t={t} />
             )}
-          </div>
+          </div> */}
 
           {/* Savollar ro'yxati */}
           {questions.length > 0 && (
@@ -508,7 +508,7 @@ export default function CreateTestPage() {
           {/* Tugmalar */}
           <ActionButtons
             handleSaveTest={handleSaveTest}
-            handleRandomize={handleRandomize}
+            // handleRandomize={handleRandomize}
             handleDownloadPDF={handleDownloadPDF}
             handleDownloadPNG={handleDownloadKeyPNG}
             t={t}
