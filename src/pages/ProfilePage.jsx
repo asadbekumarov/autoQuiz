@@ -1,10 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { User, ChevronRight, Globe, Info, LogOut, Phone } from 'lucide-react';
+import { User, ChevronRight, Globe, Info, LogOut } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 export default function ProfilePage() {
   const navigate = useNavigate();
-  // Mock user data or get from localStorage
   const [user, setUser] = useState({
     name: "Asadbek",
     phone: "+998 90 123 45 67",
@@ -15,8 +14,6 @@ export default function ProfilePage() {
     try {
       const storedUser = JSON.parse(localStorage.getItem('user') || '{}');
       if (storedUser.email) {
-        // If we have a real user, we might want to use their data
-        // For now, sticking to the requested format mock or deriving from email
         setUser(prev => ({
           ...prev,
           name: storedUser.name || storedUser.email.split('@')[0] || "Asadbek"
@@ -29,7 +26,7 @@ export default function ProfilePage() {
 
   const handleLogout = () => {
     localStorage.removeItem('user');
-    navigate('/login');
+    navigate('/');
   };
 
   return (
@@ -64,7 +61,10 @@ export default function ProfilePage() {
             </button>
 
             {/* About */}
-            <button className="w-full flex items-center justify-between p-4 hover:bg-gray-50 transition-colors">
+            <button
+              onClick={() => navigate('/about')}
+              className="w-full flex items-center justify-between p-4 hover:bg-gray-50 transition-colors"
+            >
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 bg-purple-50 rounded-full flex items-center justify-center text-purple-600">
                   <Info className="w-5 h-5" />
@@ -72,20 +72,6 @@ export default function ProfilePage() {
                 <span className="font-medium text-gray-700">Ilova haqida</span>
               </div>
               <ChevronRight className="w-5 h-5 text-gray-400" />
-            </button>
-
-            {/* Logout */}
-            <button 
-              onClick={handleLogout}
-              className="w-full flex items-center justify-between p-4 hover:bg-red-50 transition-colors group"
-            >
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-red-50 rounded-full flex items-center justify-center text-red-500 group-hover:text-red-600">
-                  <LogOut className="w-5 h-5" />
-                </div>
-                <span className="font-medium text-red-500 group-hover:text-red-600">Hisobdan chiqish</span>
-              </div>
-              <ChevronRight className="w-5 h-5 text-red-300 group-hover:text-red-400" />
             </button>
 
           </div>
