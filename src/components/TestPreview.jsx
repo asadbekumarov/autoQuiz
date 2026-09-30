@@ -2,7 +2,7 @@ import React from "react";
 
 export default function TestPreview({
   debouncedQuestions,
-  //   debouncedTestName,
+  debouncedTestName,
   debouncedConfig,
   previewRef,
   t,
@@ -12,19 +12,19 @@ export default function TestPreview({
       ref={previewRef}
       className="bg-white rounded-lg shadow-md p-6 mt-8 print:w-[210mm] print:h-[297mm]"
     >
-      <div className="mb-4">
-        {/* <h2 className="text-center text-xl font-bold text-gray-800">
+      <div className="mb-4 pb-2 border-b">
+        <h2 className="text-center text-xl font-bold text-gray-800 mb-1">
           {debouncedTestName || t("testPreview")}
-        </h2> */}
+        </h2>
         <div className="flex justify-between text-xs text-gray-600 mt-2">
           <span>{debouncedConfig.school}</span>
           <span>{debouncedConfig.subject}</span>
           <span>{debouncedConfig.className}</span>
-          {/* <span>{debouncedConfig.date}</span> */}
+          <span>{debouncedConfig.date}</span>
         </div>
-        {/* <div className="mt-2 text-sm">
+        <div className="mt-2 text-sm text-gray-700">
           {t("student")} ______________________________
-        </div> */}
+        </div>
       </div>
       <div
         className={
@@ -34,7 +34,7 @@ export default function TestPreview({
         }
       >
         {debouncedQuestions.map((q, i) => (
-          <div key={q.id || i} className=" rounded-lg p-3">
+          <div key={q.id || i} className="rounded-lg p-3">
             <p className="font-medium mb-2">
               {i + 1}. {q.text}
             </p>

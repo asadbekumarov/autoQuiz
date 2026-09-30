@@ -1,107 +1,52 @@
 import React, { useState, useEffect } from "react";
-import { Trash2, Eye, Download } from "lucide-react";
+import { Trash2, Eye, Download, PlayCircle, Plus, Search, Calendar, FileQuestion, X } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
-import { FaFileAlt } from "react-icons/fa";
+import { testStorage } from "../services/testStorage";
+import { useI18n } from "../shared/hooks/useI18n";
 
 function MyTestsPage() {
-  const getLang = () => {
-    try {
-      const s = JSON.parse(localStorage.getItem("settings") || "{}");
-      return s.language || "uz";
-    } catch {
-      return "uz";
-    }
-  };
-  const [lang, setLang] = useState(getLang());
-  const t = (key) => {
-    const dict = {
-      uz: {
-        myTestsTitle: "Mening testlarim",
-        search: "Qidirish...",
-        questionCount: "Savollar soni:",
-        addedDate: "Qo'shilgan sana:",
-        view: "Ko'rish",
-        download: "Yuklab olish",
-        delete: "O'chirish",
-        close: "Yopish",
-        noTestsFound: "Hech qanday test topilmadi 😔",
-      },
-      en: {
-        myTestsTitle: "My Tests",
-        search: "Search...",
-        questionCount: "Questions:",
-        addedDate: "Added:",
-        view: "View",
-        download: "Download",
-        delete: "Delete",
-        close: "Close",
-        noTestsFound: "No tests found 😔",
-      },
-      ru: {
-        myTestsTitle: "Мои тесты",
-        search: "Поиск...",
-        questionCount: "Количество вопросов:",
-        addedDate: "Добавлено:",
-        view: "Просмотр",
-        download: "Скачать",
-        delete: "Удалить",
-        close: "Закрыть",
-        noTestsFound: "Тесты не найдены 😔",
-      },
-    };
-    return (dict[lang] || dict.uz)[key] || key;
-  };
-  useEffect(() => {
-    const onSettingsChanged = () => setLang(getLang());
-    window.addEventListener("settingsChanged", onSettingsChanged);
-    return () =>
-      window.removeEventListener("settingsChanged", onSettingsChanged);
-  }, []);
+  const navigate = useNavigate();
+  const { t } = useI18n();
+
   const [searchTerm, setSearchTerm] = useState("");
   const [savedTests, setSavedTests] = useState([]);
   const [selectedTest, setSelectedTest] = useState(null);
 
+  const loadTests = () => {
+    setSavedTests(testStorage.getAll());
+  };
+
   useEffect(() => {
-    let storedTests = [];
-    try {
-      storedTests = JSON.parse(localStorage.getItem("savedTests") || "[]");
-    } catch {
-      storedTests = [];
-    }
-    setSavedTests(storedTests);
+    loadTests();
+    window.addEventListener("storage", loadTests);
+    return () => window.removeEventListener("storage", loadTests);
   }, []);
 
   const filteredTests = savedTests.filter((test) =>
-    (test.name || "").toLowerCase().includes(searchTerm.toLowerCase()),
+    (test.name || "").toLowerCase().includes(searchTerm.toLowerCase())
   );
+
   const [page, setPage] = useState(0);
-  const pageSize = 20;
+  const pageSize = 12;
   const pageCount = Math.ceil(filteredTests.length / pageSize);
   const pagedTests = filteredTests.slice(
     page * pageSize,
-    page * pageSize + pageSize,
+    page * pageSize + pageSize
   );
 
   const handleDeleteTest = (id) => {
-    const updatedTests = savedTests.filter((test) => test.id !== id);
-    setSavedTests(updatedTests);
-    localStorage.setItem("savedTests", JSON.stringify(updatedTests));
+    if (window.confirm("Rostdan ham ushbu testni o'chirmoqchimisiz?")) {
+      testStorage.delete(id);
+      loadTests();
+      if (selectedTest && selectedTest.id === id) {
+        setSelectedTest(null);
+      }
+    }
   };
 
   const handleDownloadTest = async (test) => {
-    const format = prompt(
-      "Qaysi formatda yuklab olmoqchisiz? (pdf/png)",
-      "pdf",
-    ).toLowerCase();
-
-    if (!format || (format !== "pdf" && format !== "png")) {
-      alert(
-        'Noto\'g\'ri format kiritildi. Iltimos, "pdf" yoki "png" ni kiriting.',
-      );
-      return;
-    }
-
     // Create temporary preview element
     const tempContainer = document.createElement("div");
     tempContainer.className =
@@ -109,282 +54,217 @@ function MyTestsPage() {
     tempContainer.style.cssText =
       "width: 210mm; height: 297mm; margin: 0; padding: 0;";
 
-    // Split questions into pages
     const questionsPerPage = 10;
-    const totalPages = Math.ceil(test.questions.length / questionsPerPage);
+    const totalPages = Math.ceil((test.questions?.length || 1) / questionsPerPage);
 
-    const canvasses = []; // To store canvases for PDF generation
-
-    for (let page = 0; page < totalPages; page++) {
+    for (let pageNum = 0; pageNum < totalPages; pageNum++) {
       const pageDiv = document.createElement("div");
       pageDiv.className = "page bg-white";
       pageDiv.style.cssText = `
-                    width: 210mm;
-                    height: 297mm;
-                    padding: 10mm;
-                    box-sizing: border-box;
-                    position: relative;
-                    page-break-after: ${page < totalPages - 1 ? "always" : "avoid"};
-                `;
+        width: 210mm;
+        height: 297mm;
+        padding: 10mm;
+        box-sizing: border-box;
+        position: relative;
+      `;
 
-        // Header
-        // const headerDiv = document.createElement('div');
-        // headerDiv.className = 'text-center mb-6';
-        // const s = test.settings || {};
-        // headerDiv.innerHTML = `
-        //     <h1 class="text-xl font-bold text-gray-800 mb-1">${test.name}</h1>
-        //     <div class="text-xs text-gray-600 flex justify-between">
-        //         <span>${s.school || ''}</span>
-        //         <span>${s.subject || ''}</span>
-        //         <span>${s.className || ''}</span>
-        //         <span>${s.date || ''}</span>
-        //     </div>
-        //     <div class="mt-1 text-sm text-left">O'quvchi: ______________________________</div>
-        // `;
-        // pageDiv.appendChild(headerDiv);
+      // Header
+      const headerDiv = document.createElement("div");
+      headerDiv.className = "text-center mb-6 pb-2 border-b";
+      const s = test.settings || {};
+      headerDiv.innerHTML = `
+        <h1 style="font-size: 14pt; font-weight: bold; margin-bottom: 2mm;">${test.name || "Test"}</h1>
+        <div style="font-size: 9pt; color: #555; display: flex; justify-content: space-between;">
+          <span>${s.school || ""}</span>
+          <span>${s.subject || ""}</span>
+          <span>${s.className || ""}</span>
+          <span>${s.date || new Date().toISOString().slice(0, 10)}</span>
+        </div>
+      `;
+      pageDiv.appendChild(headerDiv);
 
-        const startIdx = page * questionsPerPage;
-        const endIdx = Math.min(
-          startIdx + questionsPerPage,
-          test.questions.length,
-        );
-        const pageQuestions = test.questions.slice(startIdx, endIdx);
+      // Questions grid
+      const columnsContainer = document.createElement("div");
+      columnsContainer.style.cssText = "display: flex; gap: 6mm;";
 
-        const twoCols = (test.settings && test.settings.twoColumns) !== false;
-        const leftColumnQuestions = twoCols
-          ? pageQuestions.slice(0, 5)
-          : pageQuestions;
-        const rightColumnQuestions = twoCols ? pageQuestions.slice(5, 10) : [];
+      const startIdx = pageNum * questionsPerPage;
+      const leftColumnQuestions = (test.questions || []).slice(startIdx, startIdx + 5);
+      const rightColumnQuestions = (test.questions || []).slice(startIdx + 5, startIdx + 10);
 
-        // Create columns container
-        const columnsContainer = document.createElement("div");
-        columnsContainer.style.cssText = twoCols
-          ? "display: flex; gap: 5mm; height: calc(100% - 60px);"
-          : "display: block; height: calc(100% - 60px)";
-
-        // Left Column
-        const leftColumn = document.createElement("div");
-        leftColumn.style.cssText = twoCols
-          ? "flex: 1; display: flex; flex-direction: column; gap: 8mm;"
-          : "display: flex; flex-direction: column; gap: 8mm;";
-
-        leftColumnQuestions.forEach((q, i) => {
-          const globalIndex = startIdx + i;
-          const questionDiv = document.createElement("div");
-          questionDiv.style.cssText =
-            "flex: 1; padding: 3mm; box-sizing: border-box;";
-          questionDiv.innerHTML = `
-                        <div class="question-content font-medium text-gray-800 mb-2">
-                            ${globalIndex + 1}. ${q.text}
-                        </div>
-                        <div class="answer-options">
-                            ${q.answers
-                              .filter((a) => a.trim())
-                              .map(
-                                (a, j) => `
-                                <div class="answer-option flex items-center mb-1" style="margin-left: 5mm; margin-bottom: 1mm; font-size: 10pt;">
-                                    <span>${String.fromCharCode(97 + j)}) ${a}</span>
-                                </div>
-                            `,
-                              )
-                              .join("")}
-                        </div>
-                    `;
-          leftColumn.appendChild(questionDiv);
+      const renderColumn = (qs, offset) => {
+        const col = document.createElement("div");
+        col.style.cssText = "flex: 1; display: flex; flex-direction: column; gap: 4mm;";
+        qs.forEach((q, i) => {
+          const qDiv = document.createElement("div");
+          qDiv.style.cssText = "font-size: 10pt;";
+          qDiv.innerHTML = `
+            <div style="font-weight: 600; margin-bottom: 2mm;">${offset + i + 1}. ${q.text}</div>
+            <div style="margin-left: 3mm; display: flex; flex-direction: column; gap: 1mm; font-size: 9pt;">
+              ${(q.answers || []).filter(Boolean).map((a, j) => `<div>${String.fromCharCode(97 + j)}) ${a}</div>`).join("")}
+            </div>
+          `;
+          col.appendChild(qDiv);
         });
+        return col;
+      };
 
-        // Fill empty spaces if less than 5 questions
-        if (twoCols) {
-          for (let i = leftColumnQuestions.length; i < 5; i++) {
-            const emptyDiv = document.createElement("div");
-            emptyDiv.style.cssText =
-              "flex: 1; padding: 3mm; box-sizing: border-box;";
-            leftColumn.appendChild(emptyDiv);
-          }
-        }
-
-        // Right Column
-        const rightColumn = document.createElement("div");
-        rightColumn.style.cssText =
-          "flex: 1; display: flex; flex-direction: column; gap: 8mm;";
-
-        rightColumnQuestions.forEach((q, i) => {
-          const globalIndex = startIdx + 5 + i;
-          const questionDiv = document.createElement("div");
-          questionDiv.style.cssText =
-            "flex: 1; padding: 3mm; box-sizing: border-box; ";
-          questionDiv.innerHTML = `
-                        <div class="question-content font-medium text-gray-800 mb-2">
-                            ${globalIndex + 1}. ${q.text}
-                        </div>
-                        <div class="answer-options">
-                            ${q.answers
-                              .filter((a) => a.trim())
-                              .map(
-                                (a, j) => `
-                                <div class="answer-option flex items-center mb-1" style="margin-left: 5mm; margin-bottom: 1mm; font-size: 10pt;">
-                                    <span>${String.fromCharCode(97 + j)}) ${a}</span>
-                                </div>
-                            `,
-                              )
-                              .join("")}
-                        </div>
-                    `;
-          rightColumn.appendChild(questionDiv);
-        });
-
-        // Fill empty spaces if less than 5 questions
-        if (twoCols) {
-          for (let i = rightColumnQuestions.length; i < 5; i++) {
-            const emptyDiv = document.createElement("div");
-            emptyDiv.style.cssText =
-              "flex: 1; padding: 3mm; box-sizing: border-box;";
-            rightColumn.appendChild(emptyDiv);
-          }
-        }
-
-        columnsContainer.appendChild(leftColumn);
-        if (twoCols) columnsContainer.appendChild(rightColumn);
-        pageDiv.appendChild(columnsContainer);
-
-        tempContainer.appendChild(pageDiv);
+      columnsContainer.appendChild(renderColumn(leftColumnQuestions, startIdx));
+      if (rightColumnQuestions.length > 0) {
+        columnsContainer.appendChild(renderColumn(rightColumnQuestions, startIdx + 5));
       }
+      pageDiv.appendChild(columnsContainer);
+      tempContainer.appendChild(pageDiv);
+    }
 
-      // Add to document temporarily
-      document.body.appendChild(tempContainer);
+    document.body.appendChild(tempContainer);
 
-      // Generate PDF
-      if (format === "pdf") {
-        const doc = new jsPDF({
-        orientation: "portrait",
-        unit: "mm",
-        format: "a4",
-      });
-
+    try {
+      const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
       const pages = tempContainer.querySelectorAll(".page");
-
       for (let i = 0; i < pages.length; i++) {
         if (i > 0) doc.addPage();
-
-        const canvas = await html2canvas(pages[i], {
-          scale: 2,
-          useCORS: true,
-          logging: false,
-        });
-
-        // Changed from image/png to image/jpeg with 0.7 quality to reduce PDF size.
-        // This keeps the DPI at ~192 (scale: 2) while drastically reducing storage.
-        const imgData = canvas.toDataURL("image/jpeg", 0.7);
+        const canvas = await html2canvas(pages[i], { scale: 2, useCORS: true });
+        const imgData = canvas.toDataURL("image/jpeg", 0.75);
         doc.addImage(imgData, "JPEG", 0, 0, 210, 297);
       }
-
-      // Remove temporary element
+      doc.save(`${test.name || "test"}.pdf`);
+    } catch (e) {
+      console.error(e);
+      alert(t("pdfError"));
+    } finally {
       document.body.removeChild(tempContainer);
-
-      // Save PDF
-      doc.save(`${test.name}-${Date.now()}.pdf`);
-    } else if (format === "png") {
-      // ... (tempContainer creation logic remains same)
-      // ... (rendering logic remains same)
-      document.body.appendChild(tempContainer);
-
-      // Generate PNG
-      const canvas = await html2canvas(tempContainer, {
-        scale: 2,
-        useCORS: true,
-        logging: false,
-      });
-
-      // Remove temporary element
-      document.body.removeChild(tempContainer);
-
-      // Save as JPEG instead of PNG to reduce size.
-      // 0.8 quality provides sharp text but much smaller file size than lossless PNG.
-      const link = document.createElement("a");
-      link.download = `${test.name}-${Date.now()}.jpg`;
-      link.href = canvas.toDataURL("image/jpeg", 0.8);
-      link.click();
     }
   };
 
   return (
-    <section className="bg-green-50 min-h-screen py-8 px-4">
-      <div className="max-w-5xl mx-auto">
-        <h1 className="flex items-center justify-center text-3xl font-bold text-gray-800 mb-6 text-center">
-          <FaFileAlt />
-          {t("myTestsTitle")}
-        </h1>
+    <section className="bg-gradient-to-br from-green-50/40 via-gray-50 to-blue-50/30 min-h-[85vh] py-8 px-4">
+      <div className="max-w-6xl mx-auto space-y-6">
+        {/* Header & Search */}
+        <div className="bg-white rounded-3xl p-6 sm:p-8 shadow-xl shadow-green-900/5 border border-gray-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-900 tracking-tight">
+              {t("mytests")}
+            </h1>
+            <p className="text-xs text-gray-500 mt-1">
+              Barcha tuzilgan testlar ro'yxati, onlayn yechish va chop etish
+            </p>
+          </div>
 
-        <div className="mb-6 relative max-w-md mx-auto">
-          <input
-            type="text"
-            placeholder={t("search")}
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full border-2 border-green-300 p-3 rounded-lg focus:ring-2 focus:ring-green-400 focus:outline-none text-lg"
-          />
+          <div className="flex items-center gap-3">
+            <div className="relative flex-1 sm:w-64">
+              <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400">
+                <Search className="w-4 h-4" />
+              </div>
+              <input
+                type="text"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                placeholder="Testlarni qidirish..."
+                className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-2xl text-xs sm:text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-green-500 transition"
+              />
+            </div>
+
+            <button
+              onClick={() => navigate("/create")}
+              className="flex items-center gap-1.5 px-4 py-2.5 bg-green-600 hover:bg-green-700 text-white rounded-2xl text-xs sm:text-sm font-semibold shadow-md shadow-green-600/20 transition active:scale-95 flex-shrink-0"
+            >
+              <Plus className="w-4 h-4" />
+              <span className="hidden sm:inline">{t("createTitle")}</span>
+            </button>
+          </div>
         </div>
 
-        {filteredTests.length > 0 ? (
+        {/* Tests Grid */}
+        {pagedTests.length > 0 ? (
           <div>
-            <div className="grid m-auto gap-4 md:grid-cols-2">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
               {pagedTests.map((test) => (
                 <div
                   key={test.id}
-                  className="bg-white shadow-md rounded-lg p-4 flex flex-col justify-between hover:shadow-lg transition"
+                  className="bg-white rounded-3xl p-5 shadow-lg shadow-gray-200/50 border border-gray-100 hover:border-green-200 transition-all flex flex-col justify-between group"
                 >
-                  <div className="mb-4">
-                    <h2 className="text-lg font-semibold text-gray-800 mb-2">
-                      {test.name}
-                    </h2>
-                    <p className="text-gray-600 text-sm">
-                      {t("questionCount")}{" "}
-                      {test.questionsCount || test.questions.length}
-                    </p>
-                    <p className="text-gray-500 text-xs mt-1">
-                      {t("addedDate")}{" "}
-                      {new Date(test.createdAt).toLocaleDateString()}
-                    </p>
+                  <div>
+                    <div className="flex items-start justify-between gap-2 mb-3">
+                      <div className="w-10 h-10 rounded-2xl bg-green-50 text-green-700 flex items-center justify-center font-bold text-sm group-hover:scale-105 transition-transform">
+                        <FileQuestion className="w-5 h-5" />
+                      </div>
+                      <span className="text-[11px] font-semibold text-gray-400 flex items-center gap-1">
+                        <Calendar className="w-3.5 h-3.5" />
+                        {new Date(test.createdAt).toLocaleDateString()}
+                      </span>
+                    </div>
+
+                    <h3 className="font-bold text-base text-gray-900 line-clamp-2 mb-1 group-hover:text-green-700 transition-colors">
+                      {test.name || "Nomsiz test"}
+                    </h3>
+
+                    <div className="flex items-center gap-2 text-xs text-gray-500 mb-4">
+                      <span className="bg-gray-100 px-2.5 py-0.5 rounded-full font-medium">
+                        {(test.questions || []).length} ta savol
+                      </span>
+                      {test.settings?.subject && (
+                        <span className="bg-blue-50 text-blue-700 px-2.5 py-0.5 rounded-full font-medium truncate max-w-[120px]">
+                          {test.settings.subject}
+                        </span>
+                      )}
+                    </div>
                   </div>
-                  <div className="flex gap-2 mt-auto">
+
+                  <div className="space-y-2 pt-3 border-t border-gray-100">
+                    {/* Play Online Button */}
                     <button
-                      onClick={() => setSelectedTest(test)}
-                      className="flex-1 bg-blue-500 hover:bg-blue-600 text-white py-2 rounded flex items-center justify-center gap-2"
+                      onClick={() => navigate(`/quiz/${test.id}`)}
+                      className="w-full py-2 bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 shadow-sm shadow-green-600/20 transition cursor-pointer"
                     >
-                      <Eye className="w-4 h-4" /> {t("view")}
+                      <PlayCircle className="w-4 h-4" />
+                      <span>{t("startQuiz")}</span>
                     </button>
-                    <button
-                      onClick={() => handleDownloadTest(test)}
-                      className="flex-1 bg-green-500 hover:bg-green-600 text-white py-2 rounded flex items-center justify-center gap-2"
-                    >
-                      <Download className="w-4 h-4" /> {t("download")}
-                    </button>
-                    <button
-                      onClick={() => handleDeleteTest(test.id)}
-                      className="flex-1 bg-red-500 hover:bg-red-600 text-white py-2 rounded flex items-center justify-center gap-2"
-                    >
-                      <Trash2 className="w-4 h-4" /> {t("delete")}
-                    </button>
+
+                    <div className="flex gap-1.5">
+                      <button
+                        onClick={() => setSelectedTest(test)}
+                        className="flex-1 py-1.5 bg-gray-50 hover:bg-gray-100 text-gray-700 rounded-xl text-xs font-semibold flex items-center justify-center gap-1 transition"
+                      >
+                        <Eye className="w-3.5 h-3.5 text-gray-500" />
+                        <span>{t("view")}</span>
+                      </button>
+                      <button
+                        onClick={() => handleDownloadTest(test)}
+                        className="flex-1 py-1.5 bg-gray-50 hover:bg-blue-50 hover:text-blue-600 text-gray-700 rounded-xl text-xs font-semibold flex items-center justify-center gap-1 transition"
+                      >
+                        <Download className="w-3.5 h-3.5" />
+                        <span>PDF</span>
+                      </button>
+                      <button
+                        onClick={() => handleDeleteTest(test.id)}
+                        className="p-1.5 bg-gray-50 hover:bg-red-50 text-gray-400 hover:text-red-600 rounded-xl transition"
+                        title={t("delete")}
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
                   </div>
                 </div>
               ))}
             </div>
+
+            {/* Pagination */}
             {pageCount > 1 && (
-              <div className="flex items-center justify-center gap-2 mt-6">
+              <div className="flex items-center justify-center gap-2 mt-8">
                 <button
                   disabled={page === 0}
                   onClick={() => setPage((p) => Math.max(0, p - 1))}
-                  className="px-3 py-1 rounded bg-gray-200 disabled:opacity-50"
+                  className="px-3.5 py-1.5 rounded-xl border bg-white text-xs font-semibold disabled:opacity-40"
                 >
                   Oldingi
                 </button>
-                <span className="text-sm">
+                <span className="text-xs font-semibold text-gray-600">
                   {page + 1} / {pageCount}
                 </span>
                 <button
                   disabled={page >= pageCount - 1}
                   onClick={() => setPage((p) => Math.min(pageCount - 1, p + 1))}
-                  className="px-3 py-1 rounded bg-gray-200 disabled:opacity-50"
+                  className="px-3.5 py-1.5 rounded-xl border bg-white text-xs font-semibold disabled:opacity-40"
                 >
                   Keyingi
                 </button>
@@ -392,45 +272,91 @@ function MyTestsPage() {
             )}
           </div>
         ) : (
-          <p className="text-center text-gray-500 mt-10">{t("noTestsFound")}</p>
+          <div className="bg-white rounded-3xl p-12 text-center shadow-xl shadow-green-900/5 border border-gray-100 space-y-4">
+            <div className="w-16 h-16 rounded-3xl bg-green-50 text-green-600 flex items-center justify-center mx-auto">
+              <FileQuestion className="w-8 h-8" />
+            </div>
+            <h3 className="text-lg font-bold text-gray-800">
+              {searchTerm ? "Mos keladigan test topilmadi" : t("noTestsFound")}
+            </h3>
+            <p className="text-xs text-gray-500 max-w-sm mx-auto">
+              Birinchi testingizni yarating va uni PDF formatida yuklab oling yoki o'quvchilaringizga onlayn yechishga taqdim eting.
+            </p>
+            <button
+              onClick={() => navigate("/create")}
+              className="px-5 py-2.5 bg-green-600 hover:bg-green-700 text-white rounded-2xl text-xs font-semibold shadow-md shadow-green-600/20 inline-flex items-center gap-1.5 transition"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Yangi test yaratish</span>
+            </button>
+          </div>
         )}
 
+        {/* View Modal */}
         {selectedTest && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg p-6 max-w-lg w-full mx-4 overflow-y-auto max-h-[90vh]">
-              <h2 className="text-xl font-bold mb-4">{selectedTest.name}</h2>
-              <p className="text-gray-600 mb-4">
-                Qo'shilgan sana:{" "}
-                {new Date(selectedTest.createdAt).toLocaleDateString()}
-              </p>
-              <div className="space-y-4">
-                {selectedTest.questions.map((q, i) => (
-                  <div key={i} className="border rounded p-3 bg-gray-50">
-                    <p className="font-semibold">
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-3xl p-6 sm:p-8 max-w-xl w-full max-h-[85vh] flex flex-col shadow-2xl border border-gray-100 animate-in fade-in zoom-in-95">
+              <div className="flex items-start justify-between gap-4 pb-4 border-b border-gray-100">
+                <div>
+                  <h2 className="text-lg sm:text-xl font-bold text-gray-900">
+                    {selectedTest.name}
+                  </h2>
+                  <p className="text-xs text-gray-500 mt-0.5">
+                    Sana: {new Date(selectedTest.createdAt).toLocaleDateString()} • {(selectedTest.questions || []).length} ta savol
+                  </p>
+                </div>
+                <button
+                  onClick={() => setSelectedTest(null)}
+                  className="p-1.5 text-gray-400 hover:text-gray-600 rounded-xl hover:bg-gray-100 transition"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="overflow-y-auto flex-1 my-4 space-y-3 pr-1">
+                {(selectedTest.questions || []).map((q, i) => (
+                  <div key={i} className="p-3.5 rounded-2xl border border-gray-100 bg-gray-50/70 text-xs space-y-2">
+                    <p className="font-bold text-gray-900">
                       {i + 1}. {q.text}
                     </p>
-                    <ul className="pl-5 list-disc text-gray-700 mt-1">
-                      {q.answers
-                        .filter((a) => a.trim())
-                        .map((a, j) => (
-                          <li key={j}>
-                            {String.fromCharCode(97 + j)}) {a}
-                          </li>
-                        ))}
-                    </ul>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 pl-2">
+                      {(q.answers || []).filter(Boolean).map((a, j) => (
+                        <div
+                          key={j}
+                          className={`p-1.5 rounded-lg ${
+                            q.correctIndex === j
+                              ? "bg-green-100 text-green-900 font-bold"
+                              : "text-gray-600"
+                          }`}
+                        >
+                          {String.fromCharCode(97 + j)}) {a}
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 ))}
               </div>
-              <div className="flex gap-2 mt-6">
+
+              <div className="pt-4 border-t border-gray-100 flex gap-2">
+                <button
+                  onClick={() => {
+                    const id = selectedTest.id;
+                    setSelectedTest(null);
+                    navigate(`/quiz/${id}`);
+                  }}
+                  className="flex-1 py-2.5 bg-green-600 hover:bg-green-700 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition shadow-sm"
+                >
+                  <PlayCircle className="w-4 h-4" /> {t("startQuiz")}
+                </button>
                 <button
                   onClick={() => handleDownloadTest(selectedTest)}
-                  className="flex-1 bg-green-500 hover:bg-green-600 text-white py-2 rounded flex items-center justify-center gap-2"
+                  className="flex-1 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition shadow-sm"
                 >
-                  <Download className="w-4 h-4" /> {t("download")}
+                  <Download className="w-4 h-4" /> PDF
                 </button>
                 <button
                   onClick={() => setSelectedTest(null)}
-                  className="flex-1 bg-gray-300 hover:bg-gray-400 py-2 rounded transition"
+                  className="px-4 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl text-xs font-semibold transition"
                 >
                   {t("close")}
                 </button>

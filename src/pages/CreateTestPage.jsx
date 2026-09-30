@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Settings } from "lucide-react";
+import { Settings, Sparkles, Plus, CheckCircle, FileText, ChevronDown, ChevronUp } from "lucide-react";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
 import TestSettings from "../components/TestSettings";
@@ -8,6 +8,11 @@ import QuestionEditor from "../components/QuestionEditor";
 import ActionButtons from "../components/ActionButtons";
 import TestPreview from "../components/TestPreview";
 import AnswerKeyPreview from "../components/AnswerKeyPreview";
+import AnswerSheetPreview from "../components/AnswerSheetPreview";
+import SmartImportModal from "../components/SmartImportModal";
+import AIGenerateModal from "../components/AIGenerateModal";
+import { testStorage } from "../services/testStorage";
+import { useI18n } from "../shared/hooks/useI18n";
 
 export default function CreateTestPage() {
   const sanitize = (s) => String(s).replace(/[<>]/g, "");
@@ -19,6 +24,9 @@ export default function CreateTestPage() {
     }, [val, delay]);
     return debounced;
   };
+
+  const { t } = useI18n();
+
   const [testName, setTestName] = useState("");
   const [questions, setQuestions] = useState([]);
   const [currentQuestion, setCurrentQuestion] = useState({
@@ -27,8 +35,11 @@ export default function CreateTestPage() {
     correctIndex: null,
   });
   const [editIndex, setEditIndex] = useState(null);
-  const [localSavedTests, setLocalSavedTests] = useState([]);
-  const [settingsOpen, setSettingsOpen] = useState(true);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+  const [isAIModalOpen, setIsAIModalOpen] = useState(false);
+  const [saveSuccessMsg, setSaveSuccessMsg] = useState("");
+
   const [config, setConfig] = useState({
     school: "",
     subject: "",
@@ -37,147 +48,32 @@ export default function CreateTestPage() {
     twoColumns: true,
     latexEnabled: false,
   });
+
   const [dragIndex, setDragIndex] = useState(null);
   const answerRefs = useRef([]);
   const previewRef = useRef(null);
   const answerPreviewRef = useRef(null);
+  const answerSheetRef = useRef(null);
+
   const [questionTouched, setQuestionTouched] = useState(false);
   const [answersTouched, setAnswersTouched] = useState(false);
-  const getLang = () => {
-    try {
-      const s = JSON.parse(localStorage.getItem("settings") || "{}");
-      return s.language || "uz";
-    } catch {
-      return "uz";
-    }
-  };
-  const [lang, setLang] = useState(getLang());
-  const t = (key) => {
-    const dict = {
-      uz: {
-        createTitle: "Test yaratish",
-        testSettings: "Test Sozlamalari",
-        school: "Maktab/Tashkilot",
-        subject: "Fan",
-        class: "Sinf",
-        date: "Sana",
-        twoColumns: "2 ustunli ko'rinish",
-        latex: "LaTeX/MathJax formatlash",
-        questionText: "Savol matni",
-        answer: "Javob",
-        correct: "To'g'ri",
-        addQuestion: "Savol qo'shish",
-        updateQuestion: "Savolni yangilash",
-        save: "Saqlash",
-        shuffle: "Aralashtirish",
-        pdf: "PDF",
-        png: "PNG",
 
-        student: "O'quvchi:",
-        testPreview: "Test Preview",
-        answerKey: "Javoblar kaliti",
-        enterTestName: "Test nomini kiriting",
-        enterQuestionText: "Savol matnini kiriting",
-        atLeastOneQuestion: "Kamida 1 ta savol qo'shing!",
-        atLeastTwoAnswers: "Kamida 2 ta javob variantini kiriting!",
-        noQuestions: "Savollar mavjud emas",
-        pdfError:
-          "PDF eksport xatosi: brauzer cheklovi yoki rasm yaratish muammosi.",
-        pngError:
-          "PNG eksport xatosi: brauzer cheklovi yoki rasm yaratish muammosi.",
-      },
-      en: {
-        createTitle: "Create Test",
-        testSettings: "Test Settings",
-        school: "School/Organization",
-        subject: "Subject",
-        class: "Class",
-        date: "Date",
-        twoColumns: "Two-column layout",
-        latex: "LaTeX/MathJax formatting",
-        questionText: "Question text",
-        answer: "Answer",
-        correct: "Correct",
-        addQuestion: "Add question",
-        updateQuestion: "Update question",
-        save: "Save",
-        shuffle: "Shuffle",
-        pdf: "PDF",
-        png: "PNG",
-        student: "Student:",
-        testPreview: "Test Preview",
-        answerKey: "Answer Key",
-        enterTestName: "Enter test name",
-        enterQuestionText: "Enter question text",
-        atLeastOneQuestion: "Add at least 1 question!",
-        atLeastTwoAnswers: "Enter at least 2 answer options!",
-        noQuestions: "No questions",
-        pdfError: "PDF export error: browser restriction or image issue.",
-        pngError: "PNG export error: browser restriction or image issue.",
-      },
-      ru: {
-        createTitle: "Создать тест",
-        testSettings: "Настройки теста",
-        school: "Школа/Организация",
-        subject: "Предмет",
-        class: "Класс",
-        date: "Дата",
-        twoColumns: "Двухколоночный режим",
-        latex: "LaTeX/MathJax форматирование",
-        questionText: "Текст вопроса",
-        answer: "Ответ",
-        correct: "Верный",
-        addQuestion: "Добавить вопрос",
-        updateQuestion: "Обновить вопрос",
-        save: "Сохранить",
-        shuffle: "Перемешать",
-        pdf: "PDF",
-        png: "PNG",
-        student: "Ученик:",
-        testPreview: "Предпросмотр теста",
-        answerKey: "Ключ ответов",
-        enterTestName: "Введите название теста",
-        enterQuestionText: "Введите текст вопроса",
-        atLeastOneQuestion: "Добавьте хотя бы 1 вопрос!",
-        atLeastTwoAnswers: "Введите минимум 2 варианта ответа!",
-        noQuestions: "Нет вопросов",
-        pdfError:
-          "Ошибка экспорта PDF: ограничение браузера или проблема изображения.",
-        pngError:
-          "Ошибка экспорта PNG: ограничение браузера или проблема изображения.",
-      },
-    };
-    return (dict[lang] || dict.uz)[key] || key;
-  };
-
+  // Restore draft on mount
   useEffect(() => {
-    const onSettingsChanged = () => setLang(getLang());
-    window.addEventListener("settingsChanged", onSettingsChanged);
-    return () =>
-      window.removeEventListener("settingsChanged", onSettingsChanged);
-  }, []);
-
-  useEffect(() => {
-    try {
-      const d = JSON.parse(localStorage.getItem("draftTest") || "null");
-      if (d) {
-        setTestName(d.testName || "");
-        setQuestions(Array.isArray(d.questions) ? d.questions : []);
-        setConfig((c) => (d.config ? { ...c, ...d.config } : c));
+    const draft = testStorage.getDraft();
+    if (draft) {
+      if (draft.testName) setTestName(draft.testName);
+      if (Array.isArray(draft.questions) && draft.questions.length > 0) {
+        setQuestions(draft.questions);
       }
-    } catch {
-      console.warn("draft restore failed");
+      if (draft.config) {
+        setConfig((c) => ({ ...c, ...draft.config }));
+      }
     }
   }, []);
 
+  // Restore template if navigated from templates page
   useEffect(() => {
-    let saved = [];
-    try {
-      saved = JSON.parse(localStorage.getItem("savedTests") || "[]");
-    } catch {
-      saved = [];
-    }
-    setLocalSavedTests(saved);
     const tStr = localStorage.getItem("templateToUse");
     if (tStr) {
       let tpl = null;
@@ -193,20 +89,24 @@ export default function CreateTestPage() {
         const makeMCQs = (opts, count = 5) =>
           Array.from({ length: count }, (_, i) => ({
             text: `Savol ${i + 1}?`,
-            answers: (opts && opts.length ? opts : ["A", "B", "C", "D"]).slice(
-              0,
-              4,
-            ),
-            correctIndex: null,
+            answers: (opts && opts.length ? opts : ["A", "B", "C", "D"]).slice(0, 4),
+            correctIndex: 0,
+            id: Date.now() + i,
           }));
 
-        let qs = makeMCQs(tpl.options || []);
-        qs = qs.map((q, i) => ({ ...q, id: Date.now() + i }));
-        setQuestions(qs);
+        setQuestions(makeMCQs(tpl.options || []));
       }
       localStorage.removeItem("templateToUse");
     }
   }, []);
+
+  // Autosave draft
+  useEffect(() => {
+    const id = setTimeout(() => {
+      testStorage.saveDraft({ testName, questions, config });
+    }, 400);
+    return () => clearTimeout(id);
+  }, [testName, questions, config]);
 
   const handleInputChange = (index, value) => {
     const updated = [...currentQuestion.answers];
@@ -225,9 +125,7 @@ export default function CreateTestPage() {
 
     let newCorrectIndex = null;
     if (currentQuestion.correctIndex !== null) {
-      const found = pairs.findIndex(
-        (p) => p.idx === currentQuestion.correctIndex,
-      );
+      const found = pairs.findIndex((p) => p.idx === currentQuestion.correctIndex);
       newCorrectIndex = found !== -1 ? found : null;
     }
 
@@ -235,7 +133,7 @@ export default function CreateTestPage() {
       text: sanitize(
         currentQuestion.text.trim().endsWith("?")
           ? currentQuestion.text.trim()
-          : currentQuestion.text.trim() + "?",
+          : currentQuestion.text.trim() + "?"
       ),
       answers: validAnswers.map((a) => sanitize(a)),
       correctIndex: newCorrectIndex,
@@ -266,31 +164,41 @@ export default function CreateTestPage() {
   const handleEdit = (index) => {
     setCurrentQuestion(questions[index]);
     setEditIndex(index);
+    window.scrollTo({ top: 300, behavior: "smooth" });
+  };
+
+  const handleSmartImport = (importedQuestions) => {
+    setQuestions((prev) => [...prev, ...importedQuestions]);
+    setSaveSuccessMsg(`${importedQuestions.length} ta savol muvaffaqiyatli import qilindi!`);
+    setTimeout(() => setSaveSuccessMsg(""), 4000);
+  };
+
+  const handleAIImport = (generatedQuestions, meta) => {
+    setQuestions((prev) => [...prev, ...generatedQuestions]);
+    if (!testName.trim() && meta?.testName) {
+      setTestName(meta.testName);
+    }
+    if (meta?.subject) {
+      setConfig((c) => ({ ...c, subject: meta.subject }));
+    }
+    setSaveSuccessMsg(`${generatedQuestions.length} ta savol AI orqali muvaffaqiyatli yaratildi!`);
+    setTimeout(() => setSaveSuccessMsg(""), 4000);
   };
 
   const handleSaveTest = () => {
-    // if (!testName.trim()) return alert(t("enterTestName"));
     if (questions.length === 0) return alert(t("atLeastOneQuestion"));
 
-    const newTest = {
-      id: Date.now(),
-      name: testName,
+    const finalName = testName.trim() || `${config.subject || "Nazorat"} testi - ${new Date().toLocaleDateString()}`;
+
+    testStorage.save({
+      name: finalName,
       questions,
-      createdAt: new Date().toISOString(),
       settings: config,
-    };
+    });
 
-    const updated = [...localSavedTests, newTest];
-    try {
-      localStorage.setItem("savedTests", JSON.stringify(updated));
-    } catch {
-      console.warn("localStorage set failed");
-    }
-    setLocalSavedTests(updated);
-
-    alert("Test saqlandi!");
-    setTestName("");
-    setQuestions([]);
+    testStorage.clearDraft();
+    setSaveSuccessMsg(t("testSaved"));
+    setTimeout(() => setSaveSuccessMsg(""), 3500);
   };
 
   const typesetIfEnabled = async (el) => {
@@ -303,82 +211,41 @@ export default function CreateTestPage() {
     }
   };
 
-  useEffect(() => {
-    const id = setTimeout(() => {
-      try {
-        const payload = { testName, questions, config };
-        localStorage.setItem("draftTest", JSON.stringify(payload));
-      } catch {
-        console.warn("autosave failed");
-      }
-    }, 300);
-    return () => clearTimeout(id);
-  }, [testName, questions, config]);
-
-  useEffect(() => {
-    const onKey = (e) => {
-      const k = String(e.key || "").toLowerCase();
-      if (e.ctrlKey && !e.shiftKey && k === "s") {
-        e.preventDefault();
-        handleSaveTest();
-      }
-      if (e.ctrlKey && e.shiftKey && k === "q") {
-        e.preventDefault();
-        const q = {
-          id: Date.now(),
-          text: sanitize(t("questionText")) + "?",
-          answers: ["", "", "", ""],
-          correctIndex: null,
-        };
-        setQuestions((prev) => [...prev, q]);
-      }
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [testName, questions, config, lang]);
-
-  const debouncedQuestions = useDebounce(questions, 300);
-  const debouncedTestName = useDebounce(testName, 300);
-  const debouncedConfig = useDebounce(config, 300);
-
   const exportPDFfromCanvas = (canvas, filename) => {
-  // Use compression and set standard A4 format to reduce overhead
-  const doc = new jsPDF({ unit: "mm", format: "a4", compress: true });
-  const pdfW = 210;
-  const pdfH = 297;
-  const scale = pdfW / canvas.width;
-  const pageHeightPx = Math.floor(pdfH / scale);
-  let y = 0;
-  let first = true;
-  while (y < canvas.height) {
-    const sliceHeight = Math.min(pageHeightPx, canvas.height - y);
-    const temp = document.createElement("canvas");
-    temp.width = canvas.width;
-    temp.height = sliceHeight;
-    const ctx = temp.getContext("2d");
-    ctx.drawImage(
-      canvas,
-      0,
-      y,
-      canvas.width,
-      sliceHeight,
-      0,
-      0,
-      canvas.width,
-      sliceHeight,
-    );
-    // Changed format from PNG to JPEG and added 0.7 quality factor to compress images.
-    // This reduces file size from ~10MB to <1MB while keeping ~150-200 DPI clarity.
-    const imgData = temp.toDataURL("image/jpeg", 0.7);
-    const drawH = sliceHeight * scale;
-    if (!first) doc.addPage();
-    // Use JPEG format for PDF addition to minimize internal object size
-    doc.addImage(imgData, "JPEG", 0, 0, pdfW, drawH);
-    first = false;
-    y += sliceHeight;
-  }
-  doc.save(filename);
-};
+    const doc = new jsPDF({ unit: "mm", format: "a4", compress: true });
+    const pdfW = 210;
+    const pdfH = 297;
+    const scale = pdfW / canvas.width;
+    const pageHeightPx = Math.floor(pdfH / scale);
+    let y = 0;
+    let first = true;
+
+    while (y < canvas.height) {
+      const sliceHeight = Math.min(pageHeightPx, canvas.height - y);
+      const temp = document.createElement("canvas");
+      temp.width = canvas.width;
+      temp.height = sliceHeight;
+      const ctx = temp.getContext("2d");
+      ctx.drawImage(
+        canvas,
+        0,
+        y,
+        canvas.width,
+        sliceHeight,
+        0,
+        0,
+        canvas.width,
+        sliceHeight
+      );
+      const imgData = temp.toDataURL("image/jpeg", 0.75);
+      const drawH = sliceHeight * scale;
+      if (!first) doc.addPage();
+      doc.addImage(imgData, "JPEG", 0, 0, pdfW, drawH);
+      first = false;
+      y += sliceHeight;
+    }
+    doc.save(filename);
+  };
 
   const handleDownloadPDF = async () => {
     if (questions.length === 0) return alert(t("noQuestions"));
@@ -393,23 +260,33 @@ export default function CreateTestPage() {
     }
   };
 
+  const handleDownloadAnswerSheet = async () => {
+    if (questions.length === 0) return alert(t("noQuestions"));
+    try {
+      const el = answerSheetRef.current;
+      const canvas = await html2canvas(el, { scale: 2 });
+      exportPDFfromCanvas(canvas, `${testName || "test"}_javoblar_varaqasi.pdf`);
+    } catch (err) {
+      alert(t("pdfError"));
+      console.error(err);
+    }
+  };
+
   const handleDownloadKeyPNG = async () => {
-  if (questions.length === 0) return alert(t("noQuestions"));
-  try {
-    const el = answerPreviewRef.current;
-    await typesetIfEnabled(el);
-    const canvas = await html2canvas(el, { scale: 2 });
-    const link = document.createElement("a");
-    // Converted to image/jpeg with 0.8 quality to reduce size while maintaining clarity.
-    // PNG files were too large because they are lossless; JPEG is much more efficient for this use case.
-    link.href = canvas.toDataURL("image/jpeg", 0.8);
-    link.download = `${testName || "test"}_answers.jpg`;
-    link.click();
-  } catch (err) {
-    alert(t("pngError"));
-    console.error(err);
-  }
-};
+    if (questions.length === 0) return alert(t("noQuestions"));
+    try {
+      const el = answerPreviewRef.current;
+      await typesetIfEnabled(el);
+      const canvas = await html2canvas(el, { scale: 2 });
+      const link = document.createElement("a");
+      link.href = canvas.toDataURL("image/jpeg", 0.8);
+      link.download = `${testName || "test"}_kalit.jpg`;
+      link.click();
+    } catch (err) {
+      alert(t("pngError"));
+      console.error(err);
+    }
+  };
 
   const handleDragStart = (index) => setDragIndex(index);
   const handleDragOver = (e) => e.preventDefault();
@@ -450,89 +327,171 @@ export default function CreateTestPage() {
     if (nextRef && nextRef.focus) nextRef.focus();
   };
 
-  useEffect(() => {
-    if (config.latexEnabled && previewRef.current) {
-      window.MathJax?.typesetPromise?.([previewRef.current]).catch(() => {});
-    }
-  }, [questions, testName, config]);
+  const debouncedQuestions = useDebounce(questions, 300);
+  const debouncedTestName = useDebounce(testName, 300);
+  const debouncedConfig = useDebounce(config, 300);
 
   return (
-    <section className="bg-green-50 min-h-screen py-8 px-4">
-      <div className="max-w-5xl mx-auto">
-        <div className="bg-white shadow-md rounded-lg p-6 mb-6">
-          <h1 className="text-3xl font-bold text-gray-800 mb-6">
-            {t("createTitle")}
-          </h1>
+    <section className="bg-gradient-to-br from-green-50/50 via-gray-50 to-blue-50/30 min-h-screen py-8 px-4">
+      <div className="max-w-5xl mx-auto space-y-6">
+        {/* Main Editor Card */}
+        <div className="bg-white shadow-xl shadow-green-900/5 rounded-3xl p-6 sm:p-8 border border-gray-100">
+          {/* Header row */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+            <div>
+              <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-900 tracking-tight">
+                {t("createTitle")}
+              </h1>
+              <p className="text-xs text-gray-500 mt-1">
+                A4 formatiga mos savollarni kiriting yoki matndan nusxa ko'chirib joylashtiring
+              </p>
+            </div>
 
-          {/* <input
-            type="text"
-            placeholder="Test nomini kiriting..."
-            value={testName}
-            onChange={(e) => setTestName(e.target.value)}
-            className="w-full p-3 rounded-lg border-2 focus:ring-2 focus:ring-green-400 focus:outline-none text-lg font-semibold mb-6"
-          /> */}
+            {/* Action Buttons: AI Generate & Smart Import */}
+            <div className="flex flex-wrap items-center gap-2.5 self-start sm:self-auto">
+              <button
+                type="button"
+                onClick={() => setIsAIModalOpen(true)}
+                className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-purple-600 via-indigo-600 to-green-600 hover:from-purple-700 hover:to-green-700 text-white rounded-2xl font-bold text-xs sm:text-sm shadow-md shadow-purple-600/20 transition active:scale-95 cursor-pointer"
+              >
+                <Sparkles className="w-4 h-4 animate-pulse" />
+                <span>AI bilan yaratish</span>
+              </button>
 
-          {/* <div className="mb-4">
-            <button
-              onClick={() => setSettingsOpen(!settingsOpen)}
-              className="flex items-center gap-2 text-sm px-3 py-2 rounded bg-gray-100 hover:bg-gray-200"
-            >
-              <Settings className="w-4 h-4" /> {t("testSettings")}
-            </button>
-            {settingsOpen && (
-              <TestSettings config={config} setConfig={setConfig} t={t} />
-            )}
-          </div> */}
+              <button
+                type="button"
+                onClick={() => setIsImportModalOpen(true)}
+                className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 text-white rounded-2xl font-bold text-xs sm:text-sm shadow-md shadow-green-600/20 transition active:scale-95 cursor-pointer"
+              >
+                <Sparkles className="w-4 h-4" />
+                <span>{t("smartImport")}</span>
+              </button>
+            </div>
+          </div>
 
-          {/* Savollar ro'yxati */}
-          {questions.length > 0 && (
-            <QuestionList
-              questions={questions}
-              handleEdit={handleEdit}
-              handleDelete={handleDelete}
-              handleDragStart={handleDragStart}
-              handleDragOver={handleDragOver}
-              handleDrop={handleDrop}
-            />
+          {/* Toast Notification */}
+          {saveSuccessMsg && (
+            <div className="mb-6 p-4 rounded-2xl bg-green-50 border border-green-200 text-green-800 text-sm flex items-center gap-2 animate-in fade-in">
+              <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0" />
+              <span className="font-semibold">{saveSuccessMsg}</span>
+            </div>
           )}
 
-          {/* Savol qo'shish */}
-          <QuestionEditor
-            currentQuestion={currentQuestion}
-            setCurrentQuestion={setCurrentQuestion}
-            questionTouched={questionTouched}
-            setQuestionTouched={setQuestionTouched}
-            answersTouched={answersTouched}
-            setAnswersTouched={setAnswersTouched}
-            handleInputChange={handleInputChange}
-            handleAddQuestion={handleAddQuestion}
-            editIndex={editIndex}
-            t={t}
-            focusNextField={focusNextField}
-            config={config}
-          />
+          {/* Test Title Input */}
+          <div className="mb-5">
+            <label className="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-1.5">
+              {t("testName")}
+            </label>
+            <input
+              type="text"
+              placeholder={t("enterTestName")}
+              value={testName}
+              onChange={(e) => setTestName(e.target.value)}
+              className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-2xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-green-500 text-base font-semibold text-gray-800 transition"
+            />
+          </div>
 
-          {/* Tugmalar */}
+          {/* Test Settings Accordion */}
+          <div className="mb-6">
+            <button
+              type="button"
+              onClick={() => setSettingsOpen(!settingsOpen)}
+              className="flex items-center gap-2 text-xs font-bold text-gray-600 px-3.5 py-2 rounded-xl bg-gray-100 hover:bg-gray-200 transition cursor-pointer"
+            >
+              <Settings className="w-3.5 h-3.5 text-gray-500" />
+              <span>{t("testSettings")}</span>
+              {settingsOpen ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+            </button>
+
+            {settingsOpen && (
+              <div className="mt-3 p-4 bg-gray-50 rounded-2xl border border-gray-200 animate-in fade-in">
+                <TestSettings config={config} setConfig={setConfig} t={t} />
+              </div>
+            )}
+          </div>
+
+          {/* Question List (Existing questions) */}
+          {questions.length > 0 && (
+            <div className="mb-6">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-sm font-bold text-gray-800 uppercase tracking-wider">
+                  Kiritilgan savollar ({questions.length})
+                </h3>
+              </div>
+              <QuestionList
+                questions={questions}
+                handleEdit={handleEdit}
+                handleDelete={handleDelete}
+                handleDragStart={handleDragStart}
+                handleDragOver={handleDragOver}
+                handleDrop={handleDrop}
+              />
+            </div>
+          )}
+
+          {/* Question Editor */}
+          <div className="p-4 sm:p-6 bg-gray-50/70 rounded-3xl border border-gray-200 mb-6">
+            <h3 className="text-sm font-bold text-gray-800 uppercase tracking-wider mb-4 flex items-center gap-2">
+              <Plus className="w-4 h-4 text-green-600" />
+              {editIndex !== null ? t("updateQuestion") : t("addQuestion")}
+            </h3>
+            <QuestionEditor
+              currentQuestion={currentQuestion}
+              setCurrentQuestion={setCurrentQuestion}
+              questionTouched={questionTouched}
+              setQuestionTouched={setQuestionTouched}
+              answersTouched={answersTouched}
+              setAnswersTouched={setAnswersTouched}
+              handleInputChange={handleInputChange}
+              handleAddQuestion={handleAddQuestion}
+              editIndex={editIndex}
+              t={t}
+              focusNextField={focusNextField}
+              config={config}
+            />
+          </div>
+
+          {/* Action Buttons */}
           <ActionButtons
             handleSaveTest={handleSaveTest}
-            // handleRandomize={handleRandomize}
+            handleRandomize={handleRandomize}
             handleDownloadPDF={handleDownloadPDF}
-            handleDownloadPNG={handleDownloadKeyPNG}
+            handleDownloadAnswerSheet={handleDownloadAnswerSheet}
+            handleDownloadKeyPNG={handleDownloadKeyPNG}
             t={t}
           />
         </div>
 
-        {/* Preview */}
+        {/* Live A4 Test Preview */}
         {debouncedQuestions.length > 0 && (
-          <TestPreview
-            debouncedQuestions={debouncedQuestions}
-            debouncedTestName={debouncedTestName}
-            debouncedConfig={debouncedConfig}
-            previewRef={previewRef}
-            t={t}
-          />
+          <div className="space-y-4">
+            <div className="flex items-center justify-between px-2">
+              <h2 className="text-base font-bold text-gray-800 flex items-center gap-2">
+                <FileText className="w-5 h-5 text-green-600" />
+                {t("testPreview")}
+              </h2>
+            </div>
+            <TestPreview
+              debouncedQuestions={debouncedQuestions}
+              debouncedTestName={debouncedTestName}
+              debouncedConfig={debouncedConfig}
+              previewRef={previewRef}
+              t={t}
+            />
+          </div>
         )}
-        {/* Javoblar kaliti (eksport uchun off-screen) */}
+
+        {/* Answer Sheet Off-Screen Component for Printing/Export */}
+        <div style={{ position: "absolute", left: "-9999px", top: "-9999px" }}>
+          <AnswerSheetPreview
+            ref={answerSheetRef}
+            questions={debouncedQuestions}
+            testName={debouncedTestName}
+            config={debouncedConfig}
+          />
+        </div>
+
+        {/* Answer Key Off-Screen Component for PNG/PDF Export */}
         {debouncedQuestions.length > 0 && (
           <AnswerKeyPreview
             debouncedQuestions={debouncedQuestions}
@@ -543,6 +502,20 @@ export default function CreateTestPage() {
           />
         )}
       </div>
+
+      {/* Smart Import Modal */}
+      <SmartImportModal
+        isOpen={isImportModalOpen}
+        onClose={() => setIsImportModalOpen(false)}
+        onImport={handleSmartImport}
+      />
+
+      {/* AI Generate Modal */}
+      <AIGenerateModal
+        isOpen={isAIModalOpen}
+        onClose={() => setIsAIModalOpen(false)}
+        onImportQuestions={handleAIImport}
+      />
     </section>
   );
 }
