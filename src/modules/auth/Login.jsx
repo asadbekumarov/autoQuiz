@@ -46,7 +46,7 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-[85vh] bg-gradient-to-br from-green-50 via-gray-50 to-blue-50 flex items-center justify-center p-4">
+    <div className="min-h-[calc(100vh-4rem)] bg-gradient-to-br from-green-50 via-gray-50 to-blue-50 flex items-center justify-center p-4">
       <div className="max-w-md w-full">
         {/* Card */}
         <div className="bg-white rounded-3xl shadow-xl shadow-green-900/5 border border-gray-100 p-8">
