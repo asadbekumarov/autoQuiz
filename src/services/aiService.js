@@ -46,6 +46,11 @@ export async function generateQuizWithGemini({
 
   const selectedLang = langNames[lang] || langNames.uz;
 
+  const isMathSubject = /matematika|algebra|geometriya|geometry|math/i.test(subject);
+  const mathInstruction = isMathSubject
+    ? `\n- Matematika / Algebra / Geometriya uchun maxsus qoidalar: formulalar va tenglamalarni $...$ (LaTeX) formatida yoki qulay belgilarda yozing (masalan: $x^2 - 4 = 0$, $\\frac{a}{b}$, $S = \\pi r^2$, burchaklar uchun $45^\\circ$, ildizlar uchun $\\sqrt{x}$). Geometriya uchun burchaklar, perimetr, yuza, Pifagor teoremasi kabi aniq masalalar bering. Hisob-kitoblar to'liq tekshirilgan va aniq bo'lsin.`
+    : "";
+
   const prompt = `
 Siz professional o'qituvchi va test tuzuvchi mutaxassissiz.
 Quyidagi talablar asosida sifatli, qiziqarli va xatosiz ko'p variantli (MCQ) test savollarini tuzing:
@@ -54,7 +59,7 @@ Quyidagi talablar asosida sifatli, qiziqarli va xatosiz ko'p variantli (MCQ) tes
 - Mavzu: ${topic}
 - Sinf/Daraja: ${grade}
 - Savollar soni: ${count} ta
-- Til: ${selectedLang}
+- Til: ${selectedLang}${mathInstruction}
 
 MUHIM QOIDALAR:
 1. Har bir savolda aniq 4 ta javob varianti (A, B, C, D) bo'lsin.

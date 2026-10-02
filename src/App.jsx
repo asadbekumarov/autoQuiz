@@ -16,7 +16,7 @@ import QuizPlayerPage from './pages/QuizPlayerPage.jsx';
 
 function App() {
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50 text-gray-900">
+    <div className="min-h-screen flex flex-col bg-white text-gray-900 font-sans">
       <Header />
       <main className="flex-grow">
         <Routes>

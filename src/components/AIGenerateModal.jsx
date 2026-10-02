@@ -68,6 +68,8 @@ export default function AIGenerateModal({ isOpen, onClose, onImportQuestions }) 
 
   const subjectsList = [
     "Matematika",
+    "Algebra",
+    "Geometriya",
     "Fizika",
     "Kimyo",
     "Biologiya",
@@ -130,10 +132,41 @@ export default function AIGenerateModal({ isOpen, onClose, onImportQuestions }) 
                 type="text"
                 value={topic}
                 onChange={(e) => setTopic(e.target.value)}
-                placeholder="Masalan: JavaScript o'zgaruvchilar va ma'lumot turlari..."
+                placeholder="Masalan: Kvadrat tenglamalar va Viyet teoremasi..."
                 className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-2xl text-sm font-semibold text-gray-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-purple-500 transition"
                 required
               />
+              {/* Math / Algebra / Geometry Quick Topic Suggestions */}
+              {(subject === "Matematika" || subject === "Algebra" || subject === "Geometriya") && (
+                <div className="flex flex-wrap items-center gap-1.5 mt-2">
+                  <span className="text-[11px] font-bold text-gray-400">Tavsiya mavzular:</span>
+                  {(subject === "Matematika" ? [
+                    "Oddiy va o'nli kasrlar",
+                    "Foizlar va proporsiyalar",
+                    "Chiziqli tenglamalar",
+                    "Natural sonlar bo'linishi"
+                  ] : subject === "Algebra" ? [
+                    "Kvadrat tenglamalar va Viyet",
+                    "Qisqa ko'paytirish formulalari",
+                    "Logarifmlar va xossalari",
+                    "Arifmetik progressiya"
+                  ] : [
+                    "Pifagor teoremasi",
+                    "Uchburchak burchaklari yig'indisi",
+                    "Aylana va doira yuzi",
+                    "Trapetsiya va to'rtburchaklar"
+                  ]).map((suggested) => (
+                    <button
+                      key={suggested}
+                      type="button"
+                      onClick={() => setTopic(suggested)}
+                      className="text-[11px] font-medium bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200 px-2 py-0.5 rounded-lg transition cursor-pointer"
+                    >
+                      {suggested}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* Subject & Grade Grid */}
